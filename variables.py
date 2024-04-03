@@ -20,6 +20,10 @@ role_users = {
         "name": "Bad Cop",
         "avatar_url": "https://static.wikia.nocookie.net/villains/images/0/03/BadCoprun.png/revision/latest/scale-to-width/360?cb=20131125013146"
     },
+    "onboarding_ninja": {
+        "name": "Onboarding Ninja 🚀",
+        "avatar_url": "https://media.istockphoto.com/id/1403143477/vector/ninja-cartoon-character-with-katana-sword.jpg?s=612x612&w=0&k=20&c=NrS4W93Tn43xxFqwGO4QQHtmimZUxqeiij4d1aIm-II="
+        }
 }
 role_choices = []
 for role, info in role_users.items():
@@ -64,6 +68,6 @@ with open('help_script.csv') as csvfile:
     message_dict[category] = category_dict #adds last category
         # print(category_dict)
 
-# print(message_dict) 
+print(message_dict) 
 for c in message_dict.items():
     print(c)

@@ -6,7 +6,7 @@ To run:
 `pip install -r requirements.txt`
 `python3 bot.py`
 
-bot.py is the main file, cogs/ is where all of the commands are in
+bot.py is the main file, cogs is where all of the commands are in
 database_commands.py is where the database connection is.
 
 #### To figure out
