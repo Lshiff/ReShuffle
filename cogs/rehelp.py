@@ -3,7 +3,6 @@ from discord import app_commands
 from discord.ext import commands
 
 import json
-import requests
 
 from database_commands import DatabaseCommands as db
 import variables as v
@@ -14,57 +13,25 @@ import variables as v
 class RehelpCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.rehelp_context_menu = app_commands.ContextMenu(
+            name="Rehelp (with reply)",
+            callback = self.rehelp_context_menu_callback
+        )
+        self.bot.tree.add_command(self.rehelp_context_menu)
 
-
-    @app_commands.command(name="rehelp", description="Choose help message to send")
-    async def remod(self, interaction: discord.Interaction):
-        with open('cs_master.json', 'r') as f:
+    async def rehelp_context_menu_callback(self, interaction: discord.Interaction, message: discord.Message):
+        with open('support.json', 'r') as f:
             message_dict = json.load(f)
-        view = HelpCategoryDropdownView(message_dict)
+        view = HelpCategoryDropdownView(message_dict, original_message)
         await interaction.response.send_message("Pick the category", view = view, ephemeral=True)
 
 
-    @app_commands.command(name="update_help_from_spreadsheet", description="Updates the rehelp command from the spreadsehet. Can be done 200 times per month")
-    async def update(self, interaction: discord.Interaction):
-        headers = {
-            "Authorization": "Bearer REFVPUkKoKgXg6xXG6bq3gybsi9Rezsw",
-                }
-        response = requests.get('https://api.sheety.co/3404605601848dcc35723dc42f596638/csChiefManualApril2024/onboardingNinja', headers=headers)
-        print(response.text)
-
-        onboarding_ninja = response.json()["onboardingNinja"]
-
-
-        message_dict = {}
-
-        category = ''
-        category_dict = {}
-        question = ''
-        for row_dict in onboarding_ninja:
-            print(row_dict)
-            if row_dict['category'] and row_dict['category'] != category:
-                if category != '':
-                    message_dict[category] = category_dict
-                category = row_dict['category'].strip()
-
-                emoji = row_dict['categoryEmoji'].strip()
-                category_dict = {"emoji": emoji}
-
-            if row_dict['problem/question'] and row_dict['problem/question'] != question:
-                subcategory = row_dict['subCategory (internal)'].strip()
-                question = row_dict['problem/question'].strip()
-                emoji = row_dict['problemEmoji'].strip()
-                category_dict[question] = {"emoji": emoji, "subcategory": subcategory, "messages": []}
-
-            category_dict[question]['messages'].append(row_dict['chiefMessage'].strip())
-
-        message_dict[category] = category_dict #adds last category
-
-        json_file = json.dumps(message_dict)
-        with open('cs_master.json', 'w') as file:
-            file.write(json_file)
-
-        await interaction.response.send_message("Updated!", ephemeral=True)
+    @app_commands.command(name="support", description="Choose help message to send")
+    async def rehelp(self, interaction: discord.Interaction):
+        with open('support.json', 'r') as f:
+            message_dict = json.load(f)
+        view = HelpCategoryDropdownView(message_dict)
+        await interaction.response.send_message("Pick the category", view = view, ephemeral=True)
 
 
 async def setup(bot):
@@ -113,15 +80,14 @@ class CustomCategoryModal(discord.ui.Modal, title="Custom Category/Message"):
         print(type(error), error, error.__traceback__)
 
  
-class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
+class CustomProblemModal(discord.ui.Modal, title="Custom Message"):
 
     def __init__(self):
         super().__init__()
 
     custom_question = discord.ui.TextInput(
-        label = "Question answering",
+        label = "Custom Problem/Question",
         placeholder= "The question/problem you are answering (optional)",
-        required=False
     )
     custom_message = discord.ui.TextInput(
         label = "Message",
@@ -155,16 +121,44 @@ class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
         print(type(error), error, error.__traceback__)
 
 
+class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
+
+    def __init__(self):
+        super().__init__()
+
+    custom_message = discord.ui.TextInput(
+        label = "Message",
+        placeholder= "Type the custom message here..."
+    )
+
+    notes = discord.ui.TextInput(
+        label = "Notes",
+        placeholder= "Notes about this interaction\n- Should we add this as a new message?",
+        style=discord.TextStyle.long,
+        required=False
+    )
+    async def on_submit(self, interaction: discord.Interaction):
+
+        await interaction.response.send_message("Message Sent", ephemeral=True)
+        await interaction.channel.send(self.custom_message.value)
+        mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
+        if not mod_log_channel:
+            print("NO MOD LOG CHANNEL FOUND")
+            return
+
+        await mod_log_channel.send(f"Custom moderation message sent by {interaction.user.mention}:\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
+
 class HelpCategoryDropdownView(discord.ui.View):
-    def __init__(self, message_dict):
+    def __init__(self, message_dict, original_message=None):
         super().__init__()
 
         # Adds the dropdown to our view object.
-        self.add_item(HelpCategoryDropdown(message_dict))
+        self.add_item(HelpCategoryDropdown(message_dict, original_message))
 
 class HelpCategoryDropdown(discord.ui.Select):
-    def __init__(self, message_dict):
+    def __init__(self, message_dict, original_message=None):
         self.message_dict = message_dict
+        self.original_message = original_message
 
         # Set the options that will be presented inside the dropdown
         options = []
@@ -195,33 +189,34 @@ class HelpCategoryDropdown(discord.ui.Select):
             emoji = self.message_dict[category][question].get("emoji") or None
             options.append(discord.SelectOption(label=question, emoji=emoji))
 
-        options.append(discord.SelectOption(label="Custom Message", emoji="✍️"))
+        options.append(discord.SelectOption(label="Custom Problem/Question", emoji="✍️"))
 
 
-        view = HelpTopicDropdownView(options, category, self.message_dict)
+        view = HelpTopicDropdownView(options, category, self.message_dict, self.original_message)
 
-        await interaction.response.send_message("Pick the topic", view = view, ephemeral=True)
+        await interaction.response.send_message("Pick the problem/question", view = view, ephemeral=True)
 
 class HelpTopicDropdownView(discord.ui.View):
-    def __init__(self, options, category, message_dict):
+    def __init__(self, options, category, message_dict, original_message=None):
         super().__init__()
         self.category = category
 
         # Adds the dropdown to our view object.
-        self.add_item(HelpTopicDropdown(options, category, message_dict))
+        self.add_item(HelpTopicDropdown(options, category, message_dict, original_message))
 
 class HelpTopicDropdown(discord.ui.Select):
-    def __init__(self, options, category, message_dict):
+    def __init__(self, options, category, message_dict, original_message=None):
         super().__init__(placeholder='Choose the problem/question...', min_values=1, max_values=1, options=options)
         self.category = category
         self.message_dict = message_dict
+        self.original_message = original_message
 
     async def callback(self, interaction: discord.Interaction):
 
         question = self.values[0]
 
-        if question == "Custom Message":
-            await interaction.response.send_modal(CustomMessageModal())
+        if question == "Custom Problem":
+            await interaction.response.send_modal(CustomProblemModal())
             return
 
         messages = self.message_dict[self.category][question]["messages"]
@@ -234,8 +229,16 @@ class HelpTopicDropdown(discord.ui.Select):
 
         await interaction.response.send_message(msg, view=view, ephemeral=True)
         await view.wait()
+
+        if view.value == "custom":
+            return
+
         message = messages[view.value - 1]
-        await interaction.channel.send(message)
+
+        if self.original_message:
+            self.original_message.reply(message)
+        else:
+            await interaction.channel.send(message)
 
 
 class ChooseButton(discord.ui.Button):
@@ -250,6 +253,18 @@ class ChooseButton(discord.ui.Button):
         view.stop()
         await interaction.response.send_message("Sent!", ephemeral=True)
 
+class CustomButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(style=discord.ButtonStyle.blurple, label="Custom Message")
+
+    async def callback(self, interaction: discord.Interaction):
+
+        await interaction.response.send_modal(CustomMessageModal())
+
+        assert self.view is not None
+        view: Choose = self.view
+        view.value = "custom"
+        view.stop()
 
 class Choose(discord.ui.View):
     def __init__(self, num_choices: int):
@@ -258,6 +273,7 @@ class Choose(discord.ui.View):
 
         for i in range(num_choices):
             self.add_item(ChooseButton(i+1))
+        self.add_item(CustomButton())
 
 
 # async def log_moderation(interaction: discord.Interaction, category: str, message: str):
