@@ -14,7 +14,7 @@ class RehelpCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.rehelp_context_menu = app_commands.ContextMenu(
-            name="Rehelp (with reply)",
+            name="Support",
             callback = self.rehelp_context_menu_callback
         )
         self.bot.tree.add_command(self.rehelp_context_menu)
@@ -22,6 +22,7 @@ class RehelpCog(commands.Cog):
     async def rehelp_context_menu_callback(self, interaction: discord.Interaction, message: discord.Message):
         with open('support.json', 'r') as f:
             message_dict = json.load(f)
+        original_message = message
         view = HelpCategoryDropdownView(message_dict, original_message)
         await interaction.response.send_message("Pick the category", view = view, ephemeral=True)
 
@@ -40,8 +41,9 @@ async def setup(bot):
 
 class CustomCategoryModal(discord.ui.Modal, title="Custom Category/Message"):
 
-    def __init__(self):
+    def __init__(self, original_message=None):
         super().__init__()
+        self.original_message = original_message
 
     custom_category = discord.ui.TextInput(
         label = "Category",
@@ -63,7 +65,12 @@ class CustomCategoryModal(discord.ui.Modal, title="Custom Category/Message"):
     async def on_submit(self, interaction: discord.Interaction):
 
         await interaction.response.send_message("Message Sent", ephemeral=True)
-        await interaction.channel.send(self.custom_message.value)
+
+        if self.original_message:
+            await self.original_message.reply(self.custom_message.value)
+        else:
+            await interaction.channel.send(self.custom_message.value)
+
         mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
         if not mod_log_channel:
             print("NO MOD LOG CHANNEL FOUND")
@@ -82,8 +89,9 @@ class CustomCategoryModal(discord.ui.Modal, title="Custom Category/Message"):
  
 class CustomProblemModal(discord.ui.Modal, title="Custom Message"):
 
-    def __init__(self):
+    def __init__(self, original_message=None):
         super().__init__()
+        self.original_message = original_message
 
     custom_question = discord.ui.TextInput(
         label = "Custom Problem/Question",
@@ -104,7 +112,12 @@ class CustomProblemModal(discord.ui.Modal, title="Custom Message"):
     async def on_submit(self, interaction: discord.Interaction):
 
         await interaction.response.send_message("Message Sent", ephemeral=True)
-        await interaction.channel.send(self.custom_message.value)
+
+        if self.original_message:
+            await self.original_message.reply(self.custom_message.value)
+        else:
+            await interaction.channel.send(self.custom_message.value)
+
         mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
         if not mod_log_channel:
             print("NO MOD LOG CHANNEL FOUND")
@@ -123,8 +136,9 @@ class CustomProblemModal(discord.ui.Modal, title="Custom Message"):
 
 class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
 
-    def __init__(self):
+    def __init__(self, original_message=None):
         super().__init__()
+        self.original_message = original_message
 
     custom_message = discord.ui.TextInput(
         label = "Message",
@@ -140,7 +154,12 @@ class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
     async def on_submit(self, interaction: discord.Interaction):
 
         await interaction.response.send_message("Message Sent", ephemeral=True)
-        await interaction.channel.send(self.custom_message.value)
+
+        if self.original_message:
+            await self.original_message.reply(self.custom_message.value)
+        else:
+            await interaction.channel.send(self.custom_message.value)
+
         mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
         if not mod_log_channel:
             print("NO MOD LOG CHANNEL FOUND")
@@ -178,7 +197,7 @@ class HelpCategoryDropdown(discord.ui.Select):
         category = self.values[0]
 
         if category == "Custom Category/Message":
-            await interaction.response.send_modal(CustomCategoryModal())
+            await interaction.response.send_modal(CustomCategoryModal(self.original_message))
             return
 
 
@@ -215,13 +234,13 @@ class HelpTopicDropdown(discord.ui.Select):
 
         question = self.values[0]
 
-        if question == "Custom Problem":
-            await interaction.response.send_modal(CustomProblemModal())
+        if question == "Custom Problem/Question":
+            await interaction.response.send_modal(CustomProblemModal(self.original_message))
             return
 
         messages = self.message_dict[self.category][question]["messages"]
 
-        view = Choose(len(messages)) 
+        view = Choose(len(messages), self.original_message) 
 
         msg="### Choose which message to send\n"
         for i, message in enumerate(messages, start=1):
@@ -236,7 +255,7 @@ class HelpTopicDropdown(discord.ui.Select):
         message = messages[view.value - 1]
 
         if self.original_message:
-            self.original_message.reply(message)
+            await self.original_message.reply(message)
         else:
             await interaction.channel.send(message)
 
@@ -254,12 +273,13 @@ class ChooseButton(discord.ui.Button):
         await interaction.response.send_message("Sent!", ephemeral=True)
 
 class CustomButton(discord.ui.Button):
-    def __init__(self):
+    def __init__(self, original_message=None):
         super().__init__(style=discord.ButtonStyle.blurple, label="Custom Message")
+        self.original_message = original_message
 
     async def callback(self, interaction: discord.Interaction):
 
-        await interaction.response.send_modal(CustomMessageModal())
+        await interaction.response.send_modal(CustomMessageModal(self.original_message))
 
         assert self.view is not None
         view: Choose = self.view
@@ -267,13 +287,13 @@ class CustomButton(discord.ui.Button):
         view.stop()
 
 class Choose(discord.ui.View):
-    def __init__(self, num_choices: int):
+    def __init__(self, num_choices: int, original_message=None):
         super().__init__()
         self.value = None
 
         for i in range(num_choices):
             self.add_item(ChooseButton(i+1))
-        self.add_item(CustomButton())
+        self.add_item(CustomButton(original_message))
 
 
 # async def log_moderation(interaction: discord.Interaction, category: str, message: str):

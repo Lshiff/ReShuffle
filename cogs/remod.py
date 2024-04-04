@@ -10,7 +10,18 @@ import variables as v
 class RemodCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.rehelp_context_menu = app_commands.ContextMenu(
+            name="Moderation",
+            callback = self.remod_context_menu_callback
+        )
+        self.bot.tree.add_command(self.rehelp_context_menu)
 
+    async def remod_context_menu_callback(self, interaction: discord.Interaction, message: discord.Message):
+        with open('moderation.json', 'r') as f:
+            message_dict = json.load(f)
+        original_message = message
+        view = RemodDropdownView(message_dict, original_message)
+        await interaction.response.send_message("Pick the category", view = view, ephemeral=True)
 
     @app_commands.command(name="moderation", description="Choose moderation message to send")
     async def remod(self, interaction: discord.Interaction):
@@ -37,7 +48,8 @@ async def setup(bot):
 
 class CustomInfractionModal(discord.ui.Modal, title="Custom Infraction"):
 
-    def __init__(self):
+    def __init__(self, original_message):
+        self.original_message = original_message
         super().__init__()
 
     custom_category = discord.ui.TextInput(
@@ -60,7 +72,12 @@ class CustomInfractionModal(discord.ui.Modal, title="Custom Infraction"):
     async def on_submit(self, interaction: discord.Interaction):
 
         await interaction.response.send_message("Message Sent", ephemeral=True)
-        await interaction.channel.send(self.custom_message.value)
+
+        if self.original_message:
+            await self.original_message.reply(self.custom_message.value)
+        else:
+            await interaction.channel.send(self.custom_message.value)
+
         mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
         if not mod_log_channel:
             print("NO MOD LOG CHANNEL FOUND")
@@ -70,7 +87,8 @@ class CustomInfractionModal(discord.ui.Modal, title="Custom Infraction"):
 
 class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
 
-    def __init__(self):
+    def __init__(self, original_message):
+        self.original_message = original_message
         super().__init__()
 
     custom_message = discord.ui.TextInput(
@@ -88,7 +106,12 @@ class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
     async def on_submit(self, interaction: discord.Interaction):
 
         await interaction.response.send_message("Message Sent", ephemeral=True)
-        await interaction.channel.send(self.custom_message.value)
+
+        if self.original_message:
+            await self.original_message.reply(self.custom_message.value)
+        else:
+            await interaction.channel.send(self.custom_message.value)
+
         mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
         if not mod_log_channel:
             print("NO MOD LOG CHANNEL FOUND")
@@ -104,8 +127,9 @@ class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
         print(type(error), error, error.__traceback__)
 
 class RemodDropdown(discord.ui.Select):
-    def __init__(self, message_dict):
+    def __init__(self, message_dict, original_message):
         self.message_dict = message_dict
+        self.original_message = original_message
 
         # Set the options that will be presented inside the dropdown
         # options = [
@@ -143,7 +167,7 @@ class RemodDropdown(discord.ui.Select):
         infraction = self.values[0]
 
         if infraction == "Custom Infraction":
-            await interaction.response.send_modal(CustomInfractionModal())
+            await interaction.response.send_modal(CustomInfractionModal(self.original_message))
             return
 
         messages = self.message_dict[infraction]["messages"]
@@ -152,7 +176,7 @@ class RemodDropdown(discord.ui.Select):
         for i, message in enumerate(messages, start=1):
             msg += f"\n{i}: {message}\n"
             
-        view = Choose(len(messages))
+        view = Choose(len(messages), self.original_message)
 
         await interaction.response.send_message(msg, view=view, ephemeral=True)
         await view.wait()
@@ -163,7 +187,12 @@ class RemodDropdown(discord.ui.Select):
         if view.value == "custom":
             return
 
-        await interaction.channel.send(messages[view.value - 1])
+        message = messages[view.value - 1]
+
+        if self.original_message:
+            await self.original_message.reply(message)
+        else:
+            await interaction.channel.send(message)
         
         # category = self.values[0]
         # message = category[view.value - 1]
@@ -171,11 +200,11 @@ class RemodDropdown(discord.ui.Select):
 
 
 class RemodDropdownView(discord.ui.View):
-    def __init__(self, message_dict):
+    def __init__(self, message_dict, original_message=None):
         super().__init__()
 
         # Adds the dropdown to our view object.
-        self.add_item(RemodDropdown(message_dict))
+        self.add_item(RemodDropdown(message_dict, original_message))
 
 class ChooseButton(discord.ui.Button):
     def __init__(self, number: int):
@@ -189,12 +218,13 @@ class ChooseButton(discord.ui.Button):
         view.stop()
 
 class CustomButton(discord.ui.Button):
-    def __init__(self):
+    def __init__(self, original_message):
+        self.original_message = original_message
         super().__init__(style=discord.ButtonStyle.blurple, label="Custom Message")
 
     async def callback(self, interaction: discord.Interaction):
 
-        await interaction.response.send_modal(CustomMessageModal())
+        await interaction.response.send_modal(CustomMessageModal(self.original_message))
 
 
         assert self.view is not None
@@ -203,37 +233,37 @@ class CustomButton(discord.ui.Button):
         view.stop()
 
 class Choose(discord.ui.View):
-    def __init__(self, num_choices: int):
+    def __init__(self, num_choices: int, original_message):
         super().__init__()
         self.value = None
 
         for i in range(num_choices):
             self.add_item(ChooseButton(i+1))
-        self.add_item(CustomButton())
+        self.add_item(CustomButton(original_message))
 
-async def log_moderation(interaction: discord.Interaction, category: str, message: str):
+# async def log_moderation(interaction: discord.Interaction, category: str, message: str):
 
-    channel_id = interaction.channel_id
-    channel_name = interaction.channel.name
-    sender_discord_id = interaction.user.id
-    sender_discord_username = interaction.user.name
+#     channel_id = interaction.channel_id
+#     channel_name = interaction.channel.name
+#     sender_discord_id = interaction.user.id
+#     sender_discord_username = interaction.user.name
 
-    db.create_moderation_log(
-        channel_id = channel_id,
-        channel_name = channel_name,
-        moderation_category = category,
-        moderation_message = message,
-        sender_discord_id = sender_discord_id,
-        sender_discord_username = sender_discord_username,
-    )
+#     db.create_moderation_log(
+#         channel_id = channel_id,
+#         channel_name = channel_name,
+#         moderation_category = category,
+#         moderation_message = message,
+#         sender_discord_id = sender_discord_id,
+#         sender_discord_username = sender_discord_username,
+#     )
 
-    mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
-    if not mod_log_channel:
-        print("NO MOD LOG CHANNEL FOUND")
-        return
+#     mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
+#     if not mod_log_channel:
+#         print("NO MOD LOG CHANNEL FOUND")
+#         return
 
-    embed = discord.Embed(title=f"Moderation logged", description=f"Modded by <@{sender_discord_id}>", colour=discord.Colour.teal())
-    embed.add_field(name="Channel", value=f"<#{channel_id}>")
-    embed.add_field(name="Category", value=category, inline=True)
+#     embed = discord.Embed(title=f"Moderation logged", description=f"Modded by <@{sender_discord_id}>", colour=discord.Colour.teal())
+#     embed.add_field(name="Channel", value=f"<#{channel_id}>")
+#     embed.add_field(name="Category", value=category, inline=True)
 
-    await mod_log_channel.send(embed=embed)
+#     await mod_log_channel.send(embed=embed)
