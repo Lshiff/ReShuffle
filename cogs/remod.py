@@ -17,7 +17,7 @@ class RemodCog(commands.Cog):
         self.bot.tree.add_command(self.rehelp_context_menu)
 
     async def remod_context_menu_callback(self, interaction: discord.Interaction, message: discord.Message):
-        with open('moderation.json', 'r') as f:
+        with open('customer_support_messages/moderation.json', 'r') as f:
             message_dict = json.load(f)
         original_message = message
         view = RemodDropdownView(message_dict, original_message)
@@ -25,7 +25,7 @@ class RemodCog(commands.Cog):
 
     @app_commands.command(name="moderation", description="Choose moderation message to send")
     async def remod(self, interaction: discord.Interaction):
-        with open('moderation.json', 'r') as f:
+        with open('customer_support_messages/moderation.json', 'r') as f:
             message_dict = json.load(f)
         view = RemodDropdownView(message_dict)
         await interaction.response.send_message("Pick the category", view = view, ephemeral=True)#, delete_after=30)

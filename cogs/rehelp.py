@@ -20,7 +20,7 @@ class RehelpCog(commands.Cog):
         self.bot.tree.add_command(self.rehelp_context_menu)
 
     async def rehelp_context_menu_callback(self, interaction: discord.Interaction, message: discord.Message):
-        with open('support.json', 'r') as f:
+        with open('customer_support_messages/support.json', 'r') as f:
             message_dict = json.load(f)
         original_message = message
         view = HelpCategoryDropdownView(message_dict, original_message)
@@ -29,7 +29,7 @@ class RehelpCog(commands.Cog):
 
     @app_commands.command(name="support", description="Choose help message to send")
     async def rehelp(self, interaction: discord.Interaction):
-        with open('support.json', 'r') as f:
+        with open('customer_support_messages/support.json', 'r') as f:
             message_dict = json.load(f)
         view = HelpCategoryDropdownView(message_dict)
         await interaction.response.send_message("Pick the category", view = view, ephemeral=True)

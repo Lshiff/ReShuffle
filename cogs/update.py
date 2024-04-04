@@ -43,7 +43,7 @@ class UpdateCog(commands.Cog):
         print(message_dict)
 
         json_file = json.dumps(message_dict)
-        with open('moderation.json', 'w') as file:
+        with open('customer_support_messages/moderation.json', 'w') as file:
             file.write(json_file)
 
         #SUPPORT
@@ -82,7 +82,7 @@ class UpdateCog(commands.Cog):
         message_dict[category] = category_dict
 
         json_file = json.dumps(message_dict)
-        with open('support.json', 'w') as file:
+        with open('customer_support_messages/support.json', 'w') as file:
             file.write(json_file)
 
         await interaction.response.send_message("Updated!", ephemeral=True)
