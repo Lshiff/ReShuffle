@@ -9,12 +9,6 @@ import sys, traceback
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 
-from variables import GUILD_ID
-
-# if not isinstance(GUILD_ID, int):
-
-#     exit()
-
 if not TOKEN:
     print("NO TOKEN")
     exit()
@@ -25,6 +19,7 @@ bot = commands.Bot(command_prefix=".", intents = discord.Intents.all())
 async def setup_hook():
     await load()
 
+#Lods all cogs
 async def load():
     print("Loading cogs...")
     for file in os.listdir('./cogs'):
@@ -40,29 +35,25 @@ async def load():
 @bot.event
 async def on_ready():
     print("Bot is ready")
+
+    #Starts cogwatch – reloads cog whenever a file in cogs/ is saved. Useful for development
     watcher = Watcher(bot, path='cogs', preload=True)
     await watcher.start()
 
 @bot.command()
 async def sync(ctx):
     try:
-        # synced = await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
-        # print(f"Synced {len(synced)} command(s) to guild")
+        #Syncs all comamnds to the command tree – means that discord will recognize them. Should be called when a slash comamnd or context menu is created or name changed
         synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} command(s) globally")
-        # bot.tree.clear_commands(guild=discord.Object(id=GUILD_ID))
-        # await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
-        # bot.tree.clear_commands(guild=None)
-        # await bot.tree.sync()
     except Exception as e:
-        print("sync not wor")
+        print("Sync failed")
         print(e)
-        await ctx.send("no sync...")
+        await ctx.send("Sync failed")
     else:
         print(f"Synced {len(synced)} command(s)")
 
 
-
+#Reloads all cogs when '.r' typed into discord. Useful for development along with cogwatch
 @bot.command()
 async def r(ctx):
     for file in os.listdir('./cogs'):
@@ -102,7 +93,6 @@ async def load_cog(ctx, cog):
             else:
                 print(f"{file} loaded successfully!")
                 await ctx.send(f"{file} loaded successfully!")
-
 
 
 

@@ -1,19 +1,19 @@
 from typing import List, Optional
 from sqlalchemy import BIGINT, ForeignKey, create_engine, String, Date, TIMESTAMP, func, select, text, types, Integer, Boolean, MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, Relationship, sessionmaker, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy.dialects.postgresql import UUID
 
-from datetime import date, datetime, timedelta
+from datetime import datetime
+from dotenv import load_dotenv
+import os
 
-# MySQL Configuration
-mysql_host = 'reshuffle-db.c2ivaryam5yw.eu-central-1.rds.amazonaws.com'
-mysql_user = 'postgres'
-mysql_password = 'qeuurdmtwkspfyto'
-mysql_db = 'reshuffle-staging'
+load_dotenv()
+DATABASE_URI = os.getenv('DATABASE_URI')
 
-POSTGRES_ADDR="postgresql+psycopg2://postgres:qeuurdmtwkspfyto@reshuffle-db.c2ivaryam5yw.eu-central-1.rds.amazonaws.com/reshuffle-staging"
+if not DATABASE_URI:
+    print("NO DATABASE URI")
 
-connection_string = POSTGRES_ADDR
+connection_string = DATABASE_URI
 
 engine = create_engine(connection_string, pool_recycle=500)#, echo=True) # resets connection every 4 minutes
 Session = sessionmaker(engine)
@@ -172,76 +172,6 @@ class DatabaseCommands:
 
 if __name__ == "__main__":
 
-    # DatabaseCommands.create_moderation_log(
-    #     channel_id = 1214938317141839906,
-    #     channel_name = "general",
-    #     moderation_category = "spam",
-    #     moderation_message = "Feel free to talk here, but please don't spam!",
-    #     sender_discord_id = 426195398210879498,
-    #     sender_discord_username = "lshiff",
-    # )
-
-    notes = DatabaseCommands.get_user_moderation_logs_by_discord_id(265514761746120705)
-    print(notes)
-
-    # DatabaseCommands.create_user_moderation_log(
-    #     user_discord_id = 426195398210879498,
-    #     user_discord_username = "akiva",
-    #     punishment = "",
-    #     note = "He was bad",
-    #     sender_discord_id = 426195398210879498,
-    #     sender_discord_username = "lshiff",
-    # )
-
-
     pass
-    # print(get_learner_from_discord("kohvinleon"))
-    # print(get_learner_from_discord("panjackflapcake"))
-
-    # with Session() as session:
-    #     lior = session.query(Learner).filter_by(id='212357983').first()
-    #     if not lior:
-    #         print("no lior (so sad)")
-    #         exit()
-    #     lior.discord_username = "lshiff"
-    #     session.add(lior)
-    #     session.commit()
-
-    # print(get_current_quest_from_discord("kohvinleon"))
-        # print("session yo")
-        # learning_groups = session.query(LearningGroup).all()
-
-    # for learning_group in learning_groups:
-        # print(learning_group)
-        # print(learner.projects)
-
-# with Session() as session:
-#     projects = session.query(Project).all()
-# for project in projects:
-#     print(project)
-#     print(project.learning_group)
-
-
-# with Session() as session:
-#     learners = session.query(Learner).all()
-
-# for learner in learners:
-    # get_current_quest_from_discord("kohvinleon")
-    # print(learner.full_name)
-    # print(learner.discord_username)
-    # # for project in learner.projects:
-    # #     print(project.learning_group.quest_id)
-    # current_project = learner.current_project
-    # if current_project:
-    #     learning_group = current_project.learning_group
-    #     print(f"Current project: ")
-    #     print(learning_group)
-    # print()
-    # print(learner)
-    # print(learner.projects)
-    # for project in learner.projects:
-    #     print(project.learning_group)
-
-
-# kohvinleon
-# akivanagel_75126#0
+    # print("hi")
+    # print(DatabaseCommands.get_current_quest_from_discord("lshiff"))

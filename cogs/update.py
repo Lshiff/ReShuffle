@@ -13,6 +13,8 @@ class UpdateCog(commands.Cog):
     @app_commands.command(name="update_from_spreadsheet", description="Updates Support and Moderation commands from the spreadsheet")
     async def update_from_spreadsheet(self, interaction: discord.Interaction):
 
+        await interaction.response.defer(thinking=True, ephemeral=True)
+
         #MODERATION
         headers = {
             "Authorization": "Bearer REFVPUkKoKgXg6xXG6bq3gybsi9Rezsw",
@@ -85,7 +87,7 @@ class UpdateCog(commands.Cog):
         with open('customer_support_messages/support.json', 'w') as file:
             file.write(json_file)
 
-        await interaction.response.send_message("Updated!", ephemeral=True)
+        await interaction.followup.send("Updated!", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(UpdateCog(bot))

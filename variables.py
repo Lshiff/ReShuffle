@@ -1,5 +1,4 @@
 from discord import app_commands
-import csv
 
 GUILD_ID = 1214938317141839903
 MOD_LOG_CHANNEL_ID: int = 1216691948497141760

@@ -1,6 +1,7 @@
 import time
 import math
 
+# returns a Discord Timestamp – shows as relative time or timezone adjusted time
 def discord_timestamp(sql_timestamp, style="relative time"):
     # date_time = datetime(sql_timestamp)
     date_time = sql_timestamp
