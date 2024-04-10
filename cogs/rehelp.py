@@ -50,9 +50,16 @@ class CustomCategoryModal(discord.ui.Modal, title="Custom Category/Message"):
         placeholder= "Type the custom category here..."
     )
 
+    custom_problem = discord.ui.TextInput(
+        label = "Problem/Question",
+        placeholder= "Type the custom problem/question here...",
+        # required=False
+    )
+
     custom_message = discord.ui.TextInput(
         label = "Message",
-        placeholder= "Type the custom message here..."
+        placeholder= "Type the custom message here...",
+        style=discord.TextStyle.long
     )
 
     notes = discord.ui.TextInput(
@@ -64,19 +71,53 @@ class CustomCategoryModal(discord.ui.Modal, title="Custom Category/Message"):
 
     async def on_submit(self, interaction: discord.Interaction):
 
-        await interaction.response.send_message("Message Sent", ephemeral=True)
+        # await interaction.response.send_message("Message Sent", ephemeral=True)
 
-        if self.original_message:
-            await self.original_message.reply(self.custom_message.value)
-        else:
-            await interaction.channel.send(self.custom_message.value)
+        # if self.original_message:
+        #     await self.original_message.reply(self.custom_message.value)
+        # else:
+        #     await interaction.channel.send(self.custom_message.value)
 
-        mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
-        if not mod_log_channel:
-            print("NO MOD LOG CHANNEL FOUND")
-            return
+        # if self.notes.value:
+        #     notes = self.notes.value
+        # else:
+        #     notes = ""
 
-        await mod_log_channel.send(f"Custom message sent by {interaction.user.mention}:\nCategory: {self.custom_category.value}\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
+        await support_message_embed_send(
+            interaction = interaction,
+            category = self.custom_category.value,
+            problem = self.custom_problem.value,
+            message = self.custom_message.value,
+            notes = self.notes.value,
+            is_custom=True,
+            custom_category = True,
+            custom_problem = True,
+            custom_message = True,
+            original_message = self.original_message
+        )
+
+
+        # mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
+        # if not mod_log_channel:
+        #     print("NO MOD LOG CHANNEL FOUND")
+        #     return
+
+        # embed = discord.Embed(title="Custom Support Message", description=f"Sent by {interaction.user.mention}", colour=discord.Color.teal())
+        # embed.add_field(name="Custom Category", value=self.custom_category.value, inline=False)
+
+        # if self.custom_problem.value:
+        #     embed.add_field(name="Custom Problem/Question", value=self.custom_problem.value, inline=False)
+
+        # embed.add_field(name="Custom Message", value=self.custom_message.value, inline=False)
+
+        # if self.notes.value:
+        #     embed.add_field(name="Notes", value=self.notes.value, inline=False)
+
+        # if self.original_message:
+        #     embed.add_field(name="Original Message", value = f"Sent by {self.original_message.author.mention}\nLink: {self.original_message.jump_url}\nContent:\n> {self.original_message.content}")
+
+        # await mod_log_channel.send(embed=embed)
+        # await mod_log_channel.send(f"Custom message sent by {interaction.user.mention}:\nCategory: {self.custom_category.value}\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
 
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
@@ -89,17 +130,19 @@ class CustomCategoryModal(discord.ui.Modal, title="Custom Category/Message"):
  
 class CustomProblemModal(discord.ui.Modal, title="Custom Message"):
 
-    def __init__(self, original_message=None):
+    def __init__(self, original_message=None, category=None):
         super().__init__()
         self.original_message = original_message
+        self.category = category
 
     custom_question = discord.ui.TextInput(
         label = "Custom Problem/Question",
-        placeholder= "The question/problem you are answering (optional)",
+        placeholder= "Type the question/problem you are answering here...",
     )
     custom_message = discord.ui.TextInput(
         label = "Message",
-        placeholder= "Type the custom message here..."
+        placeholder= "Type the custom message here...",
+        style=discord.TextStyle.long
     )
 
     notes = discord.ui.TextInput(
@@ -111,19 +154,42 @@ class CustomProblemModal(discord.ui.Modal, title="Custom Message"):
 
     async def on_submit(self, interaction: discord.Interaction):
 
-        await interaction.response.send_message("Message Sent", ephemeral=True)
+#         await interaction.response.send_message("Message Sent", ephemeral=True)
 
-        if self.original_message:
-            await self.original_message.reply(self.custom_message.value)
-        else:
-            await interaction.channel.send(self.custom_message.value)
+#         if self.original_message:
+#             await self.original_message.reply(self.custom_message.value)
+#         else:
+#             await interaction.channel.send(self.custom_message.value)
 
-        mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
-        if not mod_log_channel:
-            print("NO MOD LOG CHANNEL FOUND")
-            return
+        await support_message_embed_send(
+            interaction = interaction,
+            category = self.category,
+            problem = self.custom_question.value,
+            message = self.custom_message.value,
+            notes = self.notes.value,
+            is_custom=True,
+            custom_category = False,
+            custom_problem = True,
+            custom_message = True,
+            original_message = self.original_message
+        )
 
-        await mod_log_channel.send(f"Custom message sent by {interaction.user.mention}:\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
+        # mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
+        # if not mod_log_channel:
+        #     print("NO MOD LOG CHANNEL FOUND")
+        #     return
+
+        # embed = discord.Embed(title="Custom Support Message", description=f"Sent by {interaction.user.mention}", colour=discord.Color.teal())
+        # embed.add_field(name="Category", value=self.category, inline=False)
+
+        # embed.add_field(name="Custom Problem/Question", value=self.custom_question.value, inline=False)
+        # embed.add_field(name="Custom Message", value=self.custom_message.value, inline=False)
+
+        # if self.notes.value:
+        #     embed.add_field(name="Notes", value=self.notes.value, inline=False)
+
+        # await mod_log_channel.send(embed=embed)
+        # await mod_log_channel.send(f"Custom message sent by {interaction.user.mention}:\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
 
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
@@ -136,13 +202,16 @@ class CustomProblemModal(discord.ui.Modal, title="Custom Message"):
 
 class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
 
-    def __init__(self, original_message=None):
+    def __init__(self, original_message, category, question):
         super().__init__()
         self.original_message = original_message
+        self.category = category
+        self.question = question
 
     custom_message = discord.ui.TextInput(
         label = "Message",
-        placeholder= "Type the custom message here..."
+        placeholder= "Type the custom message here...",
+        style=discord.TextStyle.long
     )
 
     notes = discord.ui.TextInput(
@@ -153,19 +222,43 @@ class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
     )
     async def on_submit(self, interaction: discord.Interaction):
 
-        await interaction.response.send_message("Message Sent", ephemeral=True)
+        # await interaction.response.send_message("Message Sent", ephemeral=True)
 
-        if self.original_message:
-            await self.original_message.reply(self.custom_message.value)
-        else:
-            await interaction.channel.send(self.custom_message.value)
+        # if self.original_message:
+        #     await self.original_message.reply(self.custom_message.value)
+        # else:
+        #     await interaction.channel.send(self.custom_message.value)
 
-        mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
-        if not mod_log_channel:
-            print("NO MOD LOG CHANNEL FOUND")
-            return
+        await support_message_embed_send(
+            interaction = interaction,
+            category = self.category,
+            problem = self.question,
+            message = self.custom_message.value,
+            notes = self.notes.value,
+            is_custom=True,
+            custom_category = False,
+            custom_problem = False,
+            custom_message = True,
+            original_message = self.original_message
+        )
 
-        await mod_log_channel.send(f"Custom moderation message sent by {interaction.user.mention}:\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
+        # mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
+        # if not mod_log_channel:
+        #     print("NO MOD LOG CHANNEL FOUND")
+        #     return
+
+        # embed = discord.Embed(title="Custom Support Message", description=f"Sent by {interaction.user.mention}", colour=discord.Color.teal())
+        # embed.add_field(name="Category", value=self.category, inline=False)
+        # embed.add_field(name="Custom Problem/Question", value=self.question, inline=False)
+
+        # embed.add_field(name="Custom Message", value=self.custom_message.value, inline=False)
+
+        # if self.notes.value:
+        #     embed.add_field(name="Notes", value=self.notes.value, inline=False)
+
+        # await mod_log_channel.send(embed=embed)
+
+        # await mod_log_channel.send(f"Custom moderation message sent by {interaction.user.mention}:\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
 
 class HelpCategoryDropdownView(discord.ui.View):
     def __init__(self, message_dict, original_message=None):
@@ -235,12 +328,12 @@ class HelpTopicDropdown(discord.ui.Select):
         question = self.values[0]
 
         if question == "Custom Problem/Question":
-            await interaction.response.send_modal(CustomProblemModal(self.original_message))
+            await interaction.response.send_modal(CustomProblemModal(self.original_message, self.category))
             return
 
         messages = self.message_dict[self.category][question]["messages"]
 
-        view = Choose(len(messages), self.original_message) 
+        view = Choose(len(messages), self.original_message, self.category, question) 
 
         msg="### Choose which message to send\n"
         for i, message in enumerate(messages, start=1):
@@ -254,10 +347,23 @@ class HelpTopicDropdown(discord.ui.Select):
 
         message = messages[view.value - 1]
 
-        if self.original_message:
-            await self.original_message.reply(message)
-        else:
-            await interaction.channel.send(message)
+        # if self.original_message:
+        #     await self.original_message.reply(message)
+        # else:
+        #     await interaction.channel.send(message)
+
+        await support_message_embed_send(
+            interaction = interaction,
+            category = self.category,
+            problem = question,
+            message = message,
+            # notes = self.notes.value,
+            is_custom=False,
+            custom_category = False,
+            custom_problem = False,
+            custom_message = False,
+            original_message = self.original_message
+        )
 
 
 class ChooseButton(discord.ui.Button):
@@ -273,27 +379,29 @@ class ChooseButton(discord.ui.Button):
         await interaction.response.send_message("Sent!", ephemeral=True)
 
 class CustomButton(discord.ui.Button):
-    def __init__(self, original_message=None):
+    def __init__(self, original_message, category, question):
         super().__init__(style=discord.ButtonStyle.blurple, label="Custom Message")
         self.original_message = original_message
+        self.category = category
+        self.question = question
 
     async def callback(self, interaction: discord.Interaction):
 
-        await interaction.response.send_modal(CustomMessageModal(self.original_message))
+        await interaction.response.send_modal(CustomMessageModal(self.original_message, self.category, self.question))
 
         assert self.view is not None
         view: Choose = self.view
         view.value = "custom"
-        view.stop()
+        # view.stop()
 
 class Choose(discord.ui.View):
-    def __init__(self, num_choices: int, original_message=None):
+    def __init__(self, num_choices: int, original_message, category, question):
         super().__init__()
         self.value = None
 
         for i in range(num_choices):
             self.add_item(ChooseButton(i+1))
-        self.add_item(CustomButton(original_message))
+        self.add_item(CustomButton(original_message, category, question))
 
 
 # async def log_moderation(interaction: discord.Interaction, category: str, message: str):
@@ -321,3 +429,48 @@ class Choose(discord.ui.View):
 #     embed.add_field(name="Category", value=category, inline=True)
 
 #     await mod_log_channel.send(embed=embed)
+
+
+
+async def support_message_embed_send(
+    interaction: discord.Interaction,
+    category: str, 
+    problem: str, 
+    message: str, 
+    notes: str = "", 
+    is_custom: bool = False, 
+    custom_category: bool = False, 
+    custom_problem: bool = False, 
+    custom_message: bool = False, 
+    original_message = None, 
+
+    ):
+
+    if not interaction.response.is_done():
+        await interaction.response.send_message("Message Sent", ephemeral=True)
+
+    if original_message:
+        await original_message.reply(message)
+    else:
+        await interaction.channel.send(message)
+
+    mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
+     
+    if not mod_log_channel:
+        print("NO MOD LOG CHANNEL FOUND")
+        return
+
+    title = f"{'Custom' if is_custom else ''} Suport Message Log"
+    embed = discord.Embed(title=title, description=f"Sent by {interaction.user.mention}", colour=discord.Color.teal())
+
+    embed.add_field(name=f"{'Custom' if custom_category else ''} Category", value=category, inline=False)
+    embed.add_field(name=f"{'Custom' if custom_problem else ''} Problem", value=problem, inline=False)
+    embed.add_field(name=f"{'Custom' if custom_message else ''} Message", value=message, inline=False)
+
+    if notes:
+        embed.add_field(name="Notes", value=notes, inline=False)
+
+    if original_message:
+        embed.add_field(name="Original Message", value = f"Sent by {original_message.author.mention}\nLink: {original_message.jump_url}\nContent:\n> {original_message.content}")
+
+    await mod_log_channel.send(embed=embed)

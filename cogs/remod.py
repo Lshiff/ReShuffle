@@ -59,7 +59,8 @@ class CustomInfractionModal(discord.ui.Modal, title="Custom Infraction"):
 
     custom_message = discord.ui.TextInput(
         label = "Message",
-        placeholder= "Type the custom message here..."
+        placeholder= "Type the custom message here...",
+        style=discord.TextStyle.long
     )
 
     notes = discord.ui.TextInput(
@@ -83,17 +84,27 @@ class CustomInfractionModal(discord.ui.Modal, title="Custom Infraction"):
             print("NO MOD LOG CHANNEL FOUND")
             return
 
-        await mod_log_channel.send(f"Custom moderation message sent by {interaction.user.mention}:\nInfraction: {self.custom_category.value}\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
+        embed = discord.Embed(title="Custom Moderation Message", description=f"Sent by {interaction.user.mention}", colour=discord.Color.teal())
+        embed.add_field(name="Custom Infraction", value=self.custom_category.value, inline=False)
+        embed.add_field(name="Custom Message", value=self.custom_message.value, inline=False)
+
+        if self.notes.value:
+            embed.add_field(name="Notes", value=self.notes.value, inline=False)
+
+        await mod_log_channel.send(embed=embed)
+        # await mod_log_channel.send(f"Custom moderation message sent by {interaction.user.mention}:\nInfraction: {self.custom_category.value}\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
 
 class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
 
-    def __init__(self, original_message):
+    def __init__(self, original_message, infraction):
         self.original_message = original_message
+        self.infraction = infraction
         super().__init__()
 
     custom_message = discord.ui.TextInput(
         label = "Message",
-        placeholder= "Type the custom message here..."
+        placeholder= "Type the custom message here...",
+        style=discord.TextStyle.long
     )
 
     notes = discord.ui.TextInput(
@@ -117,7 +128,16 @@ class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
             print("NO MOD LOG CHANNEL FOUND")
             return
 
-        await mod_log_channel.send(f"Custom moderation message sent by {interaction.user.mention}:\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
+
+        embed = discord.Embed(title="Custom Moderation Message", description=f"Sent by {interaction.user.mention}", colour=discord.Color.teal())
+        embed.add_field(name="Infraction", value=self.infraction)
+        embed.add_field(name="Custom Message", value=self.custom_message.value, inline=False)
+
+        if self.notes.value:
+            embed.add_field(name="Notes", value=self.notes.value, inline=False)
+
+        await mod_log_channel.send(embed=embed)
+        # await mod_log_channel.send(f"Custom moderation message sent by {interaction.user.mention}:\nMessage: {self.custom_message.value}\nNotes: {self.notes.value}")
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
 
@@ -176,7 +196,7 @@ class RemodDropdown(discord.ui.Select):
         for i, message in enumerate(messages, start=1):
             msg += f"\n{i}: {message}\n"
             
-        view = Choose(len(messages), self.original_message)
+        view = Choose(len(messages), self.original_message, infraction)
 
         await interaction.response.send_message(msg, view=view, ephemeral=True)
         await view.wait()
@@ -218,13 +238,14 @@ class ChooseButton(discord.ui.Button):
         view.stop()
 
 class CustomButton(discord.ui.Button):
-    def __init__(self, original_message):
+    def __init__(self, original_message, infraction):
         self.original_message = original_message
+        self.infraction = infraction
         super().__init__(style=discord.ButtonStyle.blurple, label="Custom Message")
 
     async def callback(self, interaction: discord.Interaction):
 
-        await interaction.response.send_modal(CustomMessageModal(self.original_message))
+        await interaction.response.send_modal(CustomMessageModal(self.original_message, self.infraction))
 
 
         assert self.view is not None
@@ -233,13 +254,13 @@ class CustomButton(discord.ui.Button):
         view.stop()
 
 class Choose(discord.ui.View):
-    def __init__(self, num_choices: int, original_message):
+    def __init__(self, num_choices: int, original_message, infraction):
         super().__init__()
         self.value = None
 
         for i in range(num_choices):
             self.add_item(ChooseButton(i+1))
-        self.add_item(CustomButton(original_message))
+        self.add_item(CustomButton(original_message, infraction))
 
 # async def log_moderation(interaction: discord.Interaction, category: str, message: str):
 

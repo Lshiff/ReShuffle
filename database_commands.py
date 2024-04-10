@@ -87,6 +87,27 @@ class ModerationLog(Base):
     sender_discord_id: Mapped[int] = mapped_column(BIGINT())
     sender_discord_username: Mapped[str] = mapped_column() 
 
+class SupportLog(Base):
+    __tablename__ = "support_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
+    channel_id: Mapped[int] = mapped_column(BIGINT())
+    channel_name: Mapped[str] = mapped_column() 
+    category: Mapped[str] = mapped_column() 
+    supcategory: Mapped[str] = mapped_column(nullable=True) 
+    question: Mapped[str] = mapped_column() 
+    message: Mapped[str] = mapped_column() 
+    notes: Mapped[str] = mapped_column(nullable=True) 
+    is_custom: Mapped[bool] = mapped_column(default=False)
+    is_custom_category: Mapped[bool] = mapped_column(default=False)
+    is_custom_question: Mapped[bool] = mapped_column(default=False)
+    is_custom_message: Mapped[bool] = mapped_column(default=False)
+    sender_discord_id: Mapped[int] = mapped_column(BIGINT())
+    sender_discord_username: Mapped[str] = mapped_column() 
+    original_message_id: Mapped[int] = mapped_column(nullable=True)
+    original_message_content: Mapped[str] = mapped_column(nullable=True)
+
 class UserModerationLog(Base):
     __tablename__ = "user_moderation_logs"
 
