@@ -90,9 +90,9 @@ class CustomCategoryModal(discord.ui.Modal, title="Custom Category/Message"):
             message = self.custom_message.value,
             notes = self.notes.value,
             is_custom=True,
-            custom_category = True,
-            custom_problem = True,
-            custom_message = True,
+            is_custom_category = True,
+            is_custom_problem = True,
+            is_custom_message = True,
             original_message = self.original_message
         )
 
@@ -168,9 +168,9 @@ class CustomProblemModal(discord.ui.Modal, title="Custom Message"):
             message = self.custom_message.value,
             notes = self.notes.value,
             is_custom=True,
-            custom_category = False,
-            custom_problem = True,
-            custom_message = True,
+            is_custom_category = False,
+            is_custom_problem = True,
+            is_custom_message = True,
             original_message = self.original_message
         )
 
@@ -202,10 +202,11 @@ class CustomProblemModal(discord.ui.Modal, title="Custom Message"):
 
 class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
 
-    def __init__(self, original_message, category, question):
+    def __init__(self, original_message, category, subcategory, question):
         super().__init__()
         self.original_message = original_message
         self.category = category
+        self.subcategory = subcategory
         self.question = question
 
     custom_message = discord.ui.TextInput(
@@ -235,10 +236,11 @@ class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
             problem = self.question,
             message = self.custom_message.value,
             notes = self.notes.value,
+            subcategory = self.subcategory,
             is_custom=True,
-            custom_category = False,
-            custom_problem = False,
-            custom_message = True,
+            is_custom_category = False,
+            is_custom_problem = False,
+            is_custom_message = True,
             original_message = self.original_message
         )
 
@@ -332,8 +334,9 @@ class HelpTopicDropdown(discord.ui.Select):
             return
 
         messages = self.message_dict[self.category][question]["messages"]
+        subcategory = self.message_dict[self.category][question]["subcategory"]
 
-        view = Choose(len(messages), self.original_message, self.category, question) 
+        view = Choose(len(messages), self.original_message, self.category, subcategory, question) 
 
         msg="### Choose which message to send\n"
         for i, message in enumerate(messages, start=1):
@@ -358,10 +361,11 @@ class HelpTopicDropdown(discord.ui.Select):
             problem = question,
             message = message,
             # notes = self.notes.value,
+            subcategory = subcategory,
             is_custom=False,
-            custom_category = False,
-            custom_problem = False,
-            custom_message = False,
+            is_custom_category = False,
+            is_custom_problem = False,
+            is_custom_message = False,
             original_message = self.original_message
         )
 
@@ -379,15 +383,16 @@ class ChooseButton(discord.ui.Button):
         await interaction.response.send_message("Sent!", ephemeral=True)
 
 class CustomButton(discord.ui.Button):
-    def __init__(self, original_message, category, question):
+    def __init__(self, original_message, category, subcategory, question):
         super().__init__(style=discord.ButtonStyle.blurple, label="Custom Message")
         self.original_message = original_message
         self.category = category
+        self.subcategory = subcategory
         self.question = question
 
     async def callback(self, interaction: discord.Interaction):
 
-        await interaction.response.send_modal(CustomMessageModal(self.original_message, self.category, self.question))
+        await interaction.response.send_modal(CustomMessageModal(self.original_message, self.category, self.subcategory, self.question))
 
         assert self.view is not None
         view: Choose = self.view
@@ -395,13 +400,13 @@ class CustomButton(discord.ui.Button):
         # view.stop()
 
 class Choose(discord.ui.View):
-    def __init__(self, num_choices: int, original_message, category, question):
+    def __init__(self, num_choices: int, original_message, category, subcategory, question):
         super().__init__()
         self.value = None
 
         for i in range(num_choices):
             self.add_item(ChooseButton(i+1))
-        self.add_item(CustomButton(original_message, category, question))
+        self.add_item(CustomButton(original_message, category, subcategory, question))
 
 
 # async def log_moderation(interaction: discord.Interaction, category: str, message: str):
@@ -438,10 +443,11 @@ async def support_message_embed_send(
     problem: str, 
     message: str, 
     notes: str = "", 
+    subcategory: str = "",
     is_custom: bool = False, 
-    custom_category: bool = False, 
-    custom_problem: bool = False, 
-    custom_message: bool = False, 
+    is_custom_category: bool = False, 
+    is_custom_problem: bool = False, 
+    is_custom_message: bool = False, 
     original_message = None, 
 
     ):
@@ -463,9 +469,9 @@ async def support_message_embed_send(
     title = f"{'Custom' if is_custom else ''} Suport Message Log"
     embed = discord.Embed(title=title, description=f"Sent by {interaction.user.mention}", colour=discord.Color.teal())
 
-    embed.add_field(name=f"{'Custom' if custom_category else ''} Category", value=category, inline=False)
-    embed.add_field(name=f"{'Custom' if custom_problem else ''} Problem", value=problem, inline=False)
-    embed.add_field(name=f"{'Custom' if custom_message else ''} Message", value=message, inline=False)
+    embed.add_field(name=f"{'Custom' if is_custom_category else ''} Category", value=category, inline=False)
+    embed.add_field(name=f"{'Custom' if is_custom_problem else ''} Problem", value=problem, inline=False)
+    embed.add_field(name=f"{'Custom' if is_custom_message else ''} Message", value=message, inline=False)
 
     if notes:
         embed.add_field(name="Notes", value=notes, inline=False)
@@ -474,3 +480,37 @@ async def support_message_embed_send(
         embed.add_field(name="Original Message", value = f"Sent by {original_message.author.mention}\nLink: {original_message.jump_url}\nContent:\n> {original_message.content}")
 
     await mod_log_channel.send(embed=embed)
+
+    #save to db
+
+    if original_message:
+        original_message_id = original_message.id
+        original_message_content = original_message.content
+        original_message_sender_id = original_message.author.id
+        original_message_sender_discord_username = original_message.author.name
+    else:
+        original_message_id = None
+        original_message_content = None
+        original_message_sender_id = None
+        original_message_sender_discord_username = None
+
+
+    db.create_support_log(
+        category = category,
+        subcategory = subcategory,
+        question = problem,
+        message = message,
+        notes = notes,
+        is_custom = is_custom,
+        is_custom_category = is_custom_category,
+        is_custom_question = is_custom_problem,
+        is_custom_message = is_custom_message,
+        channel_id = interaction.channel_id,
+        channel_name = interaction.channel.name,
+        original_message_id = original_message_id,
+        original_message_content = original_message_content,
+        original_message_sender_id = original_message_sender_id,
+        original_message_sender_discord_username = original_message_sender_discord_username,
+        sender_discord_id = interaction.user.id,
+        sender_discord_username = interaction.user.name,
+    )

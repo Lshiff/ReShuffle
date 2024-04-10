@@ -15,79 +15,102 @@ class UpdateCog(commands.Cog):
 
         await interaction.response.defer(thinking=True, ephemeral=True)
 
-        #MODERATION
-        headers = {
-            "Authorization": "Bearer REFVPUkKoKgXg6xXG6bq3gybsi9Rezsw",
-                }
-        response = requests.get('https://api.sheety.co/3404605601848dcc35723dc42f596638/csChiefManualApril2024/moderation', headers=headers)
-        print(response.text)
+        try:
+            #MODERATION
+            headers = {
+                "Authorization": "Bearer REFVPUkKoKgXg6xXG6bq3gybsi9Rezsw",
+                    }
+            response = requests.get('https://api.sheety.co/3404605601848dcc35723dc42f596638/csChiefManualApril2024/moderation', headers=headers)
+            print(response.text)
+            # return
 
-        moderation = response.json()["moderation"]
+            moderation = response.json()["moderation"]
 
-        message_dict = {}
+            message_dict_moderation = create_message_dict_moderation(moderation)
+            print(message_dict_moderation)
 
-        infraction = ''
-        infraction_dict = {}
-        for row_dict in moderation:
-            print(row_dict)
-            if row_dict['infraction'] and row_dict['infraction'] != infraction:
-                if infraction != '':
-                    message_dict[infraction] = infraction_dict
-                infraction = row_dict['infraction'].strip()
+            json_file = json.dumps(message_dict_moderation)
+            with open('customer_support_messages/moderation.json', 'w') as file:
+                file.write(json_file)
 
-                emoji = row_dict['emoji'].strip()
-                infraction_dict = {"emoji": emoji, "messages":[]}
+            #SUPPORT
+            headers = {
+                "Authorization": "Bearer REFVPUkKoKgXg6xXG6bq3gybsi9Rezsw",
+                    }
+            response = requests.get('https://api.sheety.co/3404605601848dcc35723dc42f596638/csChiefManualApril2024/support', headers=headers)
+            print(response.text)
 
-            infraction_dict['messages'].append(row_dict['chiefMessage'].strip())
+            support = response.json()["support"]
 
-        message_dict[infraction] = infraction_dict #adds last category
+            message_dict_support = create_message_dict_support(support)
 
-        print(message_dict)
+            json_file = json.dumps(message_dict_support)
+            with open('customer_support_messages/support.json', 'w') as file:
+                file.write(json_file)
 
-        json_file = json.dumps(message_dict)
-        with open('customer_support_messages/moderation.json', 'w') as file:
-            file.write(json_file)
+            await interaction.followup.send("Updated!", ephemeral=True)
 
-        #SUPPORT
-        headers = {
-            "Authorization": "Bearer REFVPUkKoKgXg6xXG6bq3gybsi9Rezsw",
-                }
-        response = requests.get('https://api.sheety.co/3404605601848dcc35723dc42f596638/csChiefManualApril2024/support', headers=headers)
-        print(response.text)
-
-        support = response.json()["support"]
+        except Exception as e:
+            print(f"Error occured when updating: \n{e}")
+            await interaction.followup.send(f"Something went wrong! Error:\n{e}", ephemeral=True)
 
 
-        message_dict = {}
+def create_message_dict_moderation(moderation_json) -> dict:
 
-        category = ''
-        category_dict = {}
-        question = ''
-        for row_dict in support:
-            print(row_dict)
-            if row_dict['category'] and row_dict['category'] != category:
-                if category != '':
-                    message_dict[category] = category_dict
-                category = row_dict['category'].strip()
+    message_dict = {}
 
-                emoji = row_dict['categoryEmoji'].strip()
-                category_dict = {"emoji": emoji}
+    infraction = ''
+    infraction_dict = {}
+    for row_dict in moderation_json:
+        print(row_dict)
+        if row_dict['infraction'] and row_dict['infraction'] != infraction:
+            if infraction != '':
+                message_dict[infraction] = infraction_dict
+            infraction = row_dict['infraction'].strip()
 
-            if row_dict['problem/question'] and row_dict['problem/question'] != question:
-                subcategory = row_dict['subCategory (internal)'].strip()
-                question = row_dict['problem/question'].strip()
-                emoji = row_dict['problemEmoji'].strip()
-                category_dict[question] = {"emoji": emoji, "subcategory": subcategory, "messages": []}
+            if row_dict['infraction'] == "END":
+                return message_dict
 
-            category_dict[question]['messages'].append(row_dict['chiefMessage'].strip())
+            emoji = row_dict['emoji'].strip()
+            infraction_dict = {"emoji": emoji, "messages":[]}
 
-        message_dict[category] = category_dict
+        infraction_dict['messages'].append(row_dict['chiefMessage'].strip())
 
-        json_file = json.dumps(message_dict)
-        with open('customer_support_messages/support.json', 'w') as file:
-            file.write(json_file)
+    message_dict[infraction] = infraction_dict #adds last category
+    return message_dict
 
-        await interaction.followup.send("Updated!", ephemeral=True)
+def create_message_dict_support(support_json) -> dict:
+    message_dict = {}
+
+    category = ''
+    category_dict = {}
+    question = ''
+    subcategory = ''
+    for row_dict in support_json:
+        print(row_dict)
+        if row_dict['category'] and row_dict['category'] != category:
+            if category != '':
+                message_dict[category] = category_dict
+            category = row_dict['category'].strip()
+
+            emoji = row_dict['categoryEmoji'].strip()
+            category_dict = {"emoji": emoji}
+
+        if row_dict['subCategory (internal)'] and row_dict['subCategory (internal)'] != subcategory:
+            subcategory = row_dict['subCategory (internal)'].strip()
+
+        if row_dict['problem/question'] and row_dict['problem/question'] != question:
+            subcategory = subcategory
+            question = row_dict['problem/question'].strip()
+            emoji = row_dict['problemEmoji'].strip()
+            category_dict[question] = {"emoji": emoji, "subcategory": subcategory, "messages": []}
+
+        category_dict[question]['messages'].append(row_dict['chiefMessage'].strip())
+
+    message_dict[category] = category_dict
+
+    return message_dict
+
 
 async def setup(bot):
     await bot.add_cog(UpdateCog(bot))
