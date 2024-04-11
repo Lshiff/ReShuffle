@@ -44,6 +44,7 @@ async def on_ready():
 async def sync(ctx):
     try:
         #Syncs all comamnds to the command tree – means that discord will recognize them. Should be called when a slash comamnd or context menu is created or name changed
+        # bot.tree.clear_commands(guild=None)
         synced = await bot.tree.sync()
     except Exception as e:
         print("Sync failed")

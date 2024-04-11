@@ -75,17 +75,17 @@ class LearningGroup(Base):
         return f"ID: {self.id} | Quest: {self.quest_id}"
 
 
-class ModerationLog(Base):
-    __tablename__ = "moderation_logs"
+# class ModerationLog(Base):
+#     __tablename__ = "moderation_logs"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
-    channel_id: Mapped[int] = mapped_column(BIGINT())
-    channel_name: Mapped[str] = mapped_column() 
-    moderation_category: Mapped[str] = mapped_column() 
-    moderation_message: Mapped[str] = mapped_column() 
-    sender_discord_id: Mapped[int] = mapped_column(BIGINT())
-    sender_discord_username: Mapped[str] = mapped_column() 
+#     id: Mapped[int] = mapped_column(primary_key=True)
+#     timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
+#     channel_id: Mapped[int] = mapped_column(BIGINT())
+#     channel_name: Mapped[str] = mapped_column() 
+#     moderation_category: Mapped[str] = mapped_column() 
+#     moderation_message: Mapped[str] = mapped_column() 
+#     sender_discord_id: Mapped[int] = mapped_column(BIGINT())
+#     sender_discord_username: Mapped[str] = mapped_column() 
 
 class SupportLog(Base):
     __tablename__ = "support_logs"
@@ -109,6 +109,28 @@ class SupportLog(Base):
     sender_discord_id: Mapped[int] = mapped_column(BIGINT())
     sender_discord_username: Mapped[str] = mapped_column() 
     timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
+
+class ModerationLog(Base):
+    __tablename__ = "moderation_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    infraction: Mapped[str] = mapped_column() 
+    message: Mapped[str] = mapped_column() 
+    notes: Mapped[str] = mapped_column(nullable=True) 
+    is_custom: Mapped[bool] = mapped_column(default=False)
+    is_custom_infraction: Mapped[bool] = mapped_column(default=False)
+    is_custom_message: Mapped[bool] = mapped_column(default=False)
+    channel_id: Mapped[int] = mapped_column(BIGINT())
+    channel_name: Mapped[str] = mapped_column() 
+    original_message_id: Mapped[int] = mapped_column(BIGINT(), nullable=True)
+    original_message_content: Mapped[str] = mapped_column(nullable=True)
+    original_message_sender_id: Mapped[int] = mapped_column(BIGINT(), nullable=True)
+    original_message_sender_discord_username: Mapped[str] = mapped_column(nullable=True) 
+    sender_discord_id: Mapped[int] = mapped_column(BIGINT())
+    sender_discord_username: Mapped[str] = mapped_column() 
+    timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
+
+
 
 class UserModerationLog(Base):
     __tablename__ = "user_moderation_logs"
@@ -151,17 +173,58 @@ class DatabaseCommands:
 
         return quest_name
 
+    # @staticmethod
+    # def create_moderation_log(channel_id: int, channel_name: str, moderation_category: str, moderation_message: str, sender_discord_id: int, sender_discord_username: str):
+
+    #     moderation_log = ModerationLog(
+    #         timestamp = datetime.now(),
+    #         channel_id = channel_id,
+    #         channel_name = channel_name,
+    #         moderation_category = moderation_category,
+    #         moderation_message = moderation_message,
+    #         sender_discord_id = sender_discord_id,
+    #         sender_discord_username = sender_discord_username,
+    #     )
+
+    #     with Session() as session:
+    #         session.add(moderation_log)
+    #         session.commit()
+
+
     @staticmethod
-    def create_moderation_log(channel_id: int, channel_name: str, moderation_category: str, moderation_message: str, sender_discord_id: int, sender_discord_username: str):
+    def create_moderation_log(
+        infraction:str,
+        message:str,
+        notes:str,
+        is_custom:bool,
+        is_custom_infraction:bool,
+        is_custom_message:bool,
+        channel_id:int,
+        channel_name:str,
+        sender_discord_id:int,
+        sender_discord_username:str,
+        original_message_id: Optional[int] = None,
+        original_message_content: Optional[str] = None,
+        original_message_sender_id: Optional[int] = None,
+        original_message_sender_discord_username:Optional[str] = None
+    ):
 
         moderation_log = ModerationLog(
-            timestamp = datetime.now(),
+            infraction = infraction,
+            message = message,
+            notes = notes,
+            is_custom = is_custom,
+            is_custom_infraction = is_custom_infraction,
+            is_custom_message = is_custom_message,
             channel_id = channel_id,
             channel_name = channel_name,
-            moderation_category = moderation_category,
-            moderation_message = moderation_message,
+            original_message_id = original_message_id,
+            original_message_content = original_message_content,
+            original_message_sender_id = original_message_sender_id,
+            original_message_sender_discord_username = original_message_sender_discord_username,
             sender_discord_id = sender_discord_id,
             sender_discord_username = sender_discord_username,
+            timestamp = datetime.now()
         )
 
         with Session() as session:
