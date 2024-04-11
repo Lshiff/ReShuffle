@@ -3,10 +3,12 @@
 ### Notes
 Uses discord.py
 To run:
-`pip install -r requirements.txt`
+`pip install -r requirements.txt`\
 `python3 bot.py`
 
-Set environment variable: `TOKEN='<discord bot token>'`
+Set environment variables:\
+`TOKEN=''`\
+`DATABASE_URI=''`
 
 bot.py is the main file, cogs is where all of the commands are in
 database_commands.py is where the database connection is.
