@@ -153,6 +153,26 @@ class ModerationLog(Base):
     sender_discord_username: Mapped[str] = mapped_column() 
     timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
 
+    def __repr__(self):
+        return f"""
+ID: {self.id}
+Infraction: {self.infraction}
+Message: {self.message}
+Notes: {self.notes}
+Is Custom: {self.is_custom}
+Is Custom Infraction: {self.is_custom_infraction}
+Is Custom Message: {self.is_custom_message}
+Channel ID: {self.channel_id}
+Channel Name: {self.channel_name}
+Original Message ID: {self.original_message_id}
+Original Message Content: {self.original_message_content}
+Original Message Sender ID: {self.original_message_sender_id}
+Original Message Sender Discord Username: {self.original_message_sender_discord_username}
+Sender Discord ID: {self.sender_discord_id}
+Sender Discord Username: {self.sender_discord_username}
+Timestamp: {self.timestamp}
+    """
+
 
 
 class UserModerationLog(Base):
@@ -231,7 +251,11 @@ class DatabaseCommands:
         original_message_content: Optional[str] = None,
         original_message_sender_id: Optional[int] = None,
         original_message_sender_discord_username:Optional[str] = None
-    ):
+    ) -> int:
+        """
+        Create a ModerationLog with the given paramaters
+        Return the moderation_log ID
+        """
 
         moderation_log = ModerationLog(
             infraction = infraction,
@@ -254,6 +278,7 @@ class DatabaseCommands:
         with Session() as session:
             session.add(moderation_log)
             session.commit()
+            return moderation_log.id
 
     @staticmethod
     def create_support_log(
