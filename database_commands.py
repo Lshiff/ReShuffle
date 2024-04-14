@@ -110,6 +110,29 @@ class SupportLog(Base):
     sender_discord_username: Mapped[str] = mapped_column() 
     timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
 
+    def __repr__(self):
+        return f"""
+ID: {self.id}
+Category: {self.category}
+Subcategory: {self.subcategory}
+Question: {self.question}
+Message: {self.message}
+Notes: {self.notes}
+Is Custom: {self.is_custom}
+Is Custom Category: {self.is_custom_category}
+Is Custom Question: {self.is_custom_question}
+Is Custom Message: {self.is_custom_message}
+Channel ID: {self.channel_id}
+Channel Name: {self.channel_name}
+Original Message ID: {self.original_message_id}
+Original Message Content: {self.original_message_content}
+Original Message Sender ID: {self.original_message_sender_id}
+Original Message Sender Discord Username: {self.original_message_sender_discord_username}
+Sender Discord ID: {self.sender_discord_id}
+Sender Discord Username: {self.sender_discord_username}
+Timestamp: {self.timestamp}
+    """
+
 class ModerationLog(Base):
     __tablename__ = "moderation_logs"
 
@@ -193,9 +216,10 @@ class DatabaseCommands:
 
     @staticmethod
     def create_moderation_log(
+        *,
         infraction:str,
         message:str,
-        notes:str,
+        notes: Optional[str] = None,
         is_custom:bool,
         is_custom_infraction:bool,
         is_custom_message:bool,
@@ -233,11 +257,12 @@ class DatabaseCommands:
 
     @staticmethod
     def create_support_log(
+        *,
         category:str,
         subcategory:str,
         question:str,
         message:str,
-        notes:str,
+        notes: Optional[str] = None,
         is_custom:bool,
         is_custom_category:bool,
         is_custom_question:bool,
@@ -250,7 +275,11 @@ class DatabaseCommands:
         original_message_content: Optional[str] = None,
         original_message_sender_id: Optional[int] = None,
         original_message_sender_discord_username:Optional[str] = None
-    ):
+    ) -> int:
+        """
+        Create a SupportLog with the given paramaters
+        Return the support_log ID
+        """
 
         support_log = SupportLog(
             category = category,
@@ -276,6 +305,29 @@ class DatabaseCommands:
         with Session() as session:
             session.add(support_log)
             session.commit()
+
+            print(f"returning id {support_log.id}")
+            return support_log.id
+
+    @staticmethod
+    def update_support_log_notes(support_log_id: int, notes: str):
+        with Session() as session:
+            support_log = session.query(SupportLog).filter_by(id = support_log_id).first()
+            if not support_log:
+                return False
+            support_log.notes = notes
+            session.commit()
+            return True
+
+    @staticmethod
+    def update_moderation_log_notes(moderation_log_id: int, notes: str):
+        with Session() as session:
+            moderation_log = session.query(ModerationLog).filter_by(id = moderation_log_id).first()
+            if not moderation_log:
+                return False
+            moderation_log.notes = notes
+            session.commit()
+            return True
 
     @staticmethod
     def create_user_moderation_log(user_discord_id: int, user_discord_username: str, punishment: str, note: str, sender_discord_id: int, sender_discord_username: str):

@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 import json
+import traceback
 
 from database_commands import DatabaseCommands as db
 import variables as v
@@ -31,6 +32,10 @@ class SupportCog(commands.Cog):
             message_dict = json.load(f)
         view = HelpCategoryDropdownView(message_dict)
         await interaction.response.send_message("Pick the category", view = view, ephemeral=True)
+
+    # @commands.command()
+    # async def t(self, ctx):
+
 
 
 async def setup(bot):
@@ -262,8 +267,10 @@ class HelpTopicDropdown(discord.ui.Select):
 
         message = messages[view.value - 1]
 
+        # await view.interaction.response.send_message("TESZT THIS", ephemeral=True)
+
         await send_and_log_support_message(
-            interaction = interaction,
+            interaction = view.interaction,
             category = self.category,
             problem = question,
             message = message,
@@ -277,6 +284,7 @@ class HelpTopicDropdown(discord.ui.Select):
         )
 
 
+
 class ChooseButton(discord.ui.Button):
     def __init__(self, number: int):
         super().__init__(style=discord.ButtonStyle.green, label=str(number))
@@ -284,10 +292,12 @@ class ChooseButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         assert self.view is not None
-        view: Choose = self.view
+        # view: Choose = self.view
+        view = self.view
         view.value = self.number
         view.stop()
-        await interaction.response.send_message("Sent!", ephemeral=True)
+        view.interaction = interaction
+        # await interaction.response.send_message("Message sent!", view=NotesView(), ephemeral=True)
 
 class CustomButton(discord.ui.Button):
     def __init__(self, original_message, category, subcategory, question):
@@ -316,6 +326,52 @@ class Choose(discord.ui.View):
         self.add_item(CustomButton(original_message, category, subcategory, question))
 
 
+
+class AddNotesView(discord.ui.View):
+    def __init__(self, support_log_id: int, mod_log_message: discord.Message):
+        super().__init__()
+        self.add_item(AddNotesButton(support_log_id, mod_log_message))
+
+class AddNotesButton(discord.ui.Button):
+    def __init__(self, support_log_id: int, mod_log_message: discord.Message):
+        super().__init__(style=discord.ButtonStyle.blurple, label = 'Add Notes')
+        self.support_log_id = support_log_id
+        self.mod_log_message = mod_log_message
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(NotesModal(support_log_id=self.support_log_id, mod_log_message=self.mod_log_message))
+        # self.stop() # but would really be self.view if i wanted that
+
+
+class NotesModal(discord.ui.Modal, title="Add Notes"):
+    def __init__(self, support_log_id: int, mod_log_message: discord.Message):
+        super().__init__()
+        self.support_log_id = support_log_id
+        self.mod_log_message = mod_log_message
+
+    notes = discord.ui.TextInput(
+        label='Notes',
+        style=discord.TextStyle.long,
+        placeholder='Add notes about this interaction...',
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        print(f"submitted id: {self.custom_id}")
+        db.update_support_log_notes(self.support_log_id, self.notes.value)
+        # await interaction.response.send_message(f"Notes added!", ephemeral=True)
+        await interaction.followup.send(f"Notes added!", ephemeral=True)
+
+        mod_log_message = self.mod_log_message
+        mod_log_embed = mod_log_message.embeds[0]
+        mod_log_embed.add_field(name="Notes", value=self.notes.value, inline=False)
+        await mod_log_message.edit(embed=mod_log_embed)
+
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+        await interaction.response.send_message('Oops! Something went wrong.', ephemeral=True)
+        traceback.print_exception(type(error), error, error.__traceback__)
+
 async def send_and_log_support_message(
     interaction: discord.Interaction,
     category: str, 
@@ -328,16 +384,14 @@ async def send_and_log_support_message(
     is_custom_problem: bool = False, 
     is_custom_message: bool = False, 
     original_message = None, 
-
     ):
 
-    if not interaction.response.is_done():
-        await interaction.response.send_message("Message Sent", ephemeral=True)
+    await interaction.response.defer(ephemeral=True, thinking=True)
 
     if original_message:
-        await original_message.reply(message)
+        response_message = await original_message.reply(message)
     else:
-        await interaction.channel.send(message)
+        response_message = await interaction.channel.send(message)
 
     mod_log_channel = await interaction.guild.fetch_channel(v.MOD_LOG_CHANNEL_ID)
      
@@ -358,7 +412,7 @@ async def send_and_log_support_message(
     if original_message:
         embed.add_field(name="Original Message", value = f"Sent by {original_message.author.mention}\nLink: {original_message.jump_url}\nContent:\n> {original_message.content}")
 
-    await mod_log_channel.send(embed=embed)
+    mod_log_message = await mod_log_channel.send(embed=embed)
 
     #save to db
 
@@ -374,7 +428,7 @@ async def send_and_log_support_message(
         original_message_sender_discord_username = None
 
 
-    db.create_support_log(
+    support_log_id = db.create_support_log(
         category = category,
         subcategory = subcategory,
         question = problem,
@@ -393,3 +447,23 @@ async def send_and_log_support_message(
         sender_discord_id = interaction.user.id,
         sender_discord_username = interaction.user.name,
     )
+
+    # if view:
+    #     await interaction.channel.send(str(support_log_id))
+
+    print(f"returned id {support_log_id}")
+
+    # if not interaction.response.is_done():
+    #     if not is_custom:
+    #         view = AddNotesView(support_log_id=support_log_id)
+    #         await interaction.response.send_message(f"Message has ben sent! This interaction has been logged in <#{v.MOD_LOG_CHANNEL_ID}> and in the database. To add notes to this interaction, press the button ↓", view=view, ephemeral=True)
+    #         await interaction.channel.send(f"id: {support_log_id}")
+    #     else:
+    #         await interaction.response.send_message("Message Sent", ephemeral=True)
+
+    if not is_custom:
+        view = AddNotesView(support_log_id=support_log_id, mod_log_message=mod_log_message)
+        await interaction.followup.send(f"Message has ben sent! This interaction has been logged in <#{v.MOD_LOG_CHANNEL_ID}> and in the database. To add notes to this interaction, press the button ↓", view=view, ephemeral=True)
+        # await interaction.channel.send(f"id: {support_log_id}")
+    else:
+        await interaction.followup.send("Message Sent", ephemeral=True)

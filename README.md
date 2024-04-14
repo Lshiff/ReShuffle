@@ -1,8 +1,8 @@
 # ReShuffle Discord Bot
 
 ### Notes
-Uses discord.py
-To run:
+Uses discord.py\
+To run:\
 `pip install -r requirements.txt`\
 `python3 bot.py`
 
