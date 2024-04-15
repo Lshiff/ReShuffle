@@ -278,6 +278,17 @@ class DatabaseCommands:
     #         session.add(moderation_log)
     #         session.commit()
 
+    @staticmethod
+    def get_past_moderation_logs_from_discord_id(discord_id: int):
+        with Session() as session:
+            moderation_logs = session.query(ModerationLog).filter_by(original_message_sender_id = discord_id).all()
+        return moderation_logs
+
+    @staticmethod
+    def get_past_support_logs_from_discord_id(discord_id: int):
+        with Session() as session:
+            support_logs = session.query(SupportLog).filter_by(original_message_sender_id = discord_id).all()
+        return support_logs
 
     @staticmethod
     def create_moderation_log(

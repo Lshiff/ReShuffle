@@ -14,6 +14,12 @@ bot.py is the main file, cogs is where all of the commands are in
 database_commands.py is where the database connection is.
 
 
+# To set up on the Discord server
+
+- Create a muted role with no permissions
+- In every channel/category except from timeout, give it no send messages permissions
+- also create a timeout category
+
 ---
 This program is a discord bot built with discord.py [link].
 ## Overfiew of each file

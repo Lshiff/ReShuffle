@@ -64,6 +64,29 @@ class UpdateCog(commands.Cog):
             with open('customer_support_messages/community.json', 'w') as file:
                 file.write(json_file)
 
+            headers = {
+                "Authorization": "Bearer REFVPUkKoKgXg6xXG6bq3gybsi9Rezsw",
+                }
+            response = requests.get('https://api.sheety.co/3404605601848dcc35723dc42f596638/csChiefManualApril2024/privateChannelModeration', headers=headers)
+            print(response.text)
+
+            private_channel_moderation = response.json()["privateChannelModeration"]
+
+            message_list = []
+            for row in private_channel_moderation:
+                if row.get("messagesForPrivateChannel (afterSuspention)"):
+                    message_list.append(row["messagesForPrivateChannel (afterSuspention)"])
+                
+            print(message_list)
+
+            message_list_dict = {
+                "message_list": message_list
+            }
+            json_file = json.dumps(message_list_dict)
+            with open('customer_support_messages/private_moderation.json', 'w') as file:
+                file.write(json_file)
+
+
             await interaction.followup.send("Updated!", ephemeral=True)
 
         except Exception as e:
