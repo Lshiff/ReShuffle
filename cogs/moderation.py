@@ -63,8 +63,6 @@ class CustomInfractionModal(discord.ui.Modal, title="Custom Infraction"):
 
     async def on_submit(self, interaction: discord.Interaction):
 
-        # await interaction.response.send_message("Message Sent", ephemeral=True)
-
 
         await send_and_log_moderation_message(
             interaction = interaction,
@@ -99,8 +97,6 @@ class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-
-        # await interaction.response.send_message("Message Sent", ephemeral=True)
 
         await send_and_log_moderation_message(
             interaction = interaction,
@@ -195,7 +191,6 @@ class ChooseButton(discord.ui.Button):
         view.value = self.number
         view.interaction = interaction
         view.stop()
-        # await interaction.response.send_message("Message Sent", ephemeral=True)
 
 class CustomButton(discord.ui.Button):
     def __init__(self, original_message, infraction):
@@ -209,7 +204,7 @@ class CustomButton(discord.ui.Button):
 
 
         assert self.view is not None
-        view: Choose = self.view
+        view = self.view
         view.value = "custom"
         view.stop()
 

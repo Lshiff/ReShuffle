@@ -48,6 +48,22 @@ class UpdateCog(commands.Cog):
             with open('customer_support_messages/support.json', 'w') as file:
                 file.write(json_file)
 
+            #COMMUNITY
+            headers = {
+                "Authorization": "Bearer REFVPUkKoKgXg6xXG6bq3gybsi9Rezsw",
+                    }
+            response = requests.get('https://api.sheety.co/3404605601848dcc35723dc42f596638/csChiefManualApril2024/community', headers=headers)
+            print(response.text)
+
+            community = response.json()["community"]
+
+            #shoudlw ork for support and community
+            message_dict_support = create_message_dict_support(community)
+
+            json_file = json.dumps(message_dict_support)
+            with open('customer_support_messages/community.json', 'w') as file:
+                file.write(json_file)
+
             await interaction.followup.send("Updated!", ephemeral=True)
 
         except Exception as e:

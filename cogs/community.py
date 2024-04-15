@@ -9,33 +9,33 @@ from database_commands import DatabaseCommands as db
 import variables as v
 
 
-class SupportCog(commands.Cog):
+class CommunityCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.rehelp_context_menu = app_commands.ContextMenu(
-            name="Support",
+            name="Community",
             callback = self.rehelp_context_menu_callback
         )
         self.bot.tree.add_command(self.rehelp_context_menu)
 
     async def rehelp_context_menu_callback(self, interaction: discord.Interaction, message: discord.Message):
-        with open('customer_support_messages/support.json', 'r') as f:
+        with open('customer_support_messages/community.json', 'r') as f:
             message_dict = json.load(f)
         original_message = message
         view = HelpCategoryDropdownView(message_dict, original_message)
         await interaction.response.send_message("Pick the category", view = view, ephemeral=True)
 
 
-    @app_commands.command(name="support", description="Choose help message to send")
+    @app_commands.command(name="community", description="Choose community message to send")
     async def rehelp(self, interaction: discord.Interaction):
-        with open('customer_support_messages/support.json', 'r') as f:
+        with open('customer_support_messages/community.json', 'r') as f:
             message_dict = json.load(f)
         view = HelpCategoryDropdownView(message_dict)
         await interaction.response.send_message("Pick the category", view = view, ephemeral=True)
 
 
 async def setup(bot):
-    await bot.add_cog(SupportCog(bot))
+    await bot.add_cog(CommunityCog(bot))
 
 
 class CustomCategoryModal(discord.ui.Modal, title="Custom Category/Message"):
@@ -70,7 +70,7 @@ class CustomCategoryModal(discord.ui.Modal, title="Custom Category/Message"):
 
     async def on_submit(self, interaction: discord.Interaction):
 
-        await send_and_log_support_message(
+        await send_and_log_community_message(
             interaction = interaction,
             category = self.custom_category.value,
             problem = self.custom_problem.value,
@@ -118,7 +118,7 @@ class CustomProblemModal(discord.ui.Modal, title="Custom Message"):
 
     async def on_submit(self, interaction: discord.Interaction):
 
-        await send_and_log_support_message(
+        await send_and_log_community_message(
             interaction = interaction,
             category = self.category,
             problem = self.custom_question.value,
@@ -164,7 +164,7 @@ class CustomMessageModal(discord.ui.Modal, title="Custom Message"):
     async def on_submit(self, interaction: discord.Interaction):
 
 
-        await send_and_log_support_message(
+        await send_and_log_community_message(
             interaction = interaction,
             category = self.category,
             problem = self.question,
@@ -265,7 +265,7 @@ class HelpTopicDropdown(discord.ui.Select):
 
         # await view.interaction.response.send_message("TESZT THIS", ephemeral=True)
 
-        await send_and_log_support_message(
+        await send_and_log_community_message(
             interaction = view.interaction,
             category = self.category,
             problem = question,
@@ -324,25 +324,25 @@ class Choose(discord.ui.View):
 
 
 class AddNotesView(discord.ui.View):
-    def __init__(self, support_log_id: int, mod_log_message: discord.Message):
+    def __init__(self, community_log_id: int, mod_log_message: discord.Message):
         super().__init__()
-        self.add_item(AddNotesButton(support_log_id, mod_log_message))
+        self.add_item(AddNotesButton(community_log_id, mod_log_message))
 
 class AddNotesButton(discord.ui.Button):
-    def __init__(self, support_log_id: int, mod_log_message: discord.Message):
+    def __init__(self, community_log_id: int, mod_log_message: discord.Message):
         super().__init__(style=discord.ButtonStyle.blurple, label = 'Add Notes')
-        self.support_log_id = support_log_id
+        self.community_log_id = community_log_id
         self.mod_log_message = mod_log_message
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(NotesModal(support_log_id=self.support_log_id, mod_log_message=self.mod_log_message))
+        await interaction.response.send_modal(NotesModal(community_log_id=self.community_log_id, mod_log_message=self.mod_log_message))
         # self.stop() # but would really be self.view if i wanted that
 
 
 class NotesModal(discord.ui.Modal, title="Add Notes"):
-    def __init__(self, support_log_id: int, mod_log_message: discord.Message):
+    def __init__(self, community_log_id: int, mod_log_message: discord.Message):
         super().__init__()
-        self.support_log_id = support_log_id
+        self.community_log_id = community_log_id
         self.mod_log_message = mod_log_message
 
     notes = discord.ui.TextInput(
@@ -354,7 +354,7 @@ class NotesModal(discord.ui.Modal, title="Add Notes"):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True, thinking=True)
         print(f"submitted id: {self.custom_id}")
-        db.update_support_log_notes(self.support_log_id, self.notes.value)
+        db.update_community_log_notes(self.community_log_id, self.notes.value)
         # await interaction.response.send_message(f"Notes added!", ephemeral=True)
         await interaction.followup.send(f"Notes added!", ephemeral=True)
 
@@ -368,7 +368,7 @@ class NotesModal(discord.ui.Modal, title="Add Notes"):
         await interaction.response.send_message('Oops! Something went wrong.', ephemeral=True)
         traceback.print_exception(type(error), error, error.__traceback__)
 
-async def send_and_log_support_message(
+async def send_and_log_community_message(
     interaction: discord.Interaction,
     category: str, 
     problem: str, 
@@ -424,7 +424,7 @@ async def send_and_log_support_message(
         original_message_sender_discord_username = None
 
 
-    support_log_id = db.create_support_log(
+    community_log_id = db.create_community_log(
         category = category,
         subcategory = subcategory,
         question = problem,
@@ -446,7 +446,7 @@ async def send_and_log_support_message(
 
 
     if not is_custom:
-        view = AddNotesView(support_log_id=support_log_id, mod_log_message=mod_log_message)
+        view = AddNotesView(community_log_id=community_log_id, mod_log_message=mod_log_message)
         await interaction.followup.send(f"Message has ben sent! This interaction has been logged in <#{v.MOD_LOG_CHANNEL_ID}> and in the database. To add notes to this interaction, press the button ↓", view=view, ephemeral=True)
     else:
         await interaction.followup.send("Message Sent", ephemeral=True)

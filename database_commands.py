@@ -173,6 +173,51 @@ Sender Discord Username: {self.sender_discord_username}
 Timestamp: {self.timestamp}
     """
 
+class CommunityLog(Base):
+    __tablename__ = "community_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    category: Mapped[str] = mapped_column() 
+    subcategory: Mapped[str] = mapped_column(nullable=True) 
+    question: Mapped[str] = mapped_column() 
+    message: Mapped[str] = mapped_column() 
+    notes: Mapped[str] = mapped_column(nullable=True) 
+    is_custom: Mapped[bool] = mapped_column(default=False)
+    is_custom_category: Mapped[bool] = mapped_column(default=False)
+    is_custom_question: Mapped[bool] = mapped_column(default=False)
+    is_custom_message: Mapped[bool] = mapped_column(default=False)
+    channel_id: Mapped[int] = mapped_column(BIGINT())
+    channel_name: Mapped[str] = mapped_column() 
+    original_message_id: Mapped[int] = mapped_column(BIGINT(), nullable=True)
+    original_message_content: Mapped[str] = mapped_column(nullable=True)
+    original_message_sender_id: Mapped[int] = mapped_column(BIGINT(), nullable=True)
+    original_message_sender_discord_username: Mapped[str] = mapped_column(nullable=True) 
+    sender_discord_id: Mapped[int] = mapped_column(BIGINT())
+    sender_discord_username: Mapped[str] = mapped_column() 
+    timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
+
+    def __repr__(self):
+        return f"""
+ID: {self.id}
+Category: {self.category}
+Subcategory: {self.subcategory}
+Question: {self.question}
+Message: {self.message}
+Notes: {self.notes}
+Is Custom: {self.is_custom}
+Is Custom Category: {self.is_custom_category}
+Is Custom Question: {self.is_custom_question}
+Is Custom Message: {self.is_custom_message}
+Channel ID: {self.channel_id}
+Channel Name: {self.channel_name}
+Original Message ID: {self.original_message_id}
+Original Message Content: {self.original_message_content}
+Original Message Sender ID: {self.original_message_sender_id}
+Original Message Sender Discord Username: {self.original_message_sender_discord_username}
+Sender Discord ID: {self.sender_discord_id}
+Sender Discord Username: {self.sender_discord_username}
+Timestamp: {self.timestamp}
+    """
 
 
 class UserModerationLog(Base):
@@ -333,6 +378,69 @@ class DatabaseCommands:
 
             print(f"returning id {support_log.id}")
             return support_log.id
+
+    @staticmethod
+    def create_community_log(
+        *,
+        category:str,
+        subcategory:str,
+        question:str,
+        message:str,
+        notes: Optional[str] = None,
+        is_custom:bool,
+        is_custom_category:bool,
+        is_custom_question:bool,
+        is_custom_message:bool,
+        channel_id:int,
+        channel_name:str,
+        sender_discord_id:int,
+        sender_discord_username:str,
+        original_message_id: Optional[int] = None,
+        original_message_content: Optional[str] = None,
+        original_message_sender_id: Optional[int] = None,
+        original_message_sender_discord_username:Optional[str] = None
+    ) -> int:
+        """
+        Create a CommunityLog with the given paramaters
+        Return the community_log ID
+        """
+
+        community_log = CommunityLog(
+            category = category,
+            subcategory = subcategory,
+            question = question,
+            message = message,
+            notes = notes,
+            is_custom = is_custom,
+            is_custom_category = is_custom_category,
+            is_custom_question = is_custom_question,
+            is_custom_message = is_custom_message,
+            channel_id = channel_id,
+            channel_name = channel_name,
+            original_message_id = original_message_id,
+            original_message_content = original_message_content,
+            original_message_sender_id = original_message_sender_id,
+            original_message_sender_discord_username = original_message_sender_discord_username,
+            sender_discord_id = sender_discord_id,
+            sender_discord_username = sender_discord_username,
+            timestamp = datetime.now()
+        )
+
+        with Session() as session:
+            session.add(community_log)
+            session.commit()
+
+            return community_log.id
+
+    @staticmethod
+    def update_community_log_notes(community_log_id: int, notes: str):
+        with Session() as session:
+            community_log = session.query(CommunityLog).filter_by(id = community_log_id).first()
+            if not community_log:
+                return False
+            community_log.notes = notes
+            session.commit()
+            return True
 
     @staticmethod
     def update_support_log_notes(support_log_id: int, notes: str):
