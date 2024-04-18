@@ -16,8 +16,9 @@ class ExtraCog(commands.Cog):
     @app_commands.describe(activity="Activity to display")
     @app_commands.choices(activity=[
         app_commands.Choice(name="Playing", value="playing"),
-        app_commands.Choice(name="Listening", value="listening"),
+        app_commands.Choice(name="Listening to", value="listening"),
         app_commands.Choice(name="Watching", value="watching"),
+        app_commands.Choice(name="None (resets status to nothing)", value="none"),
         ])
     @app_commands.describe(status="The status text")
     async def change_status(self, interaction: discord.Interaction, activity: app_commands.Choice[str], status: str):
@@ -29,6 +30,8 @@ class ExtraCog(commands.Cog):
                 await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=status))
             case "watching":
                 await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=status))
+            case "none":
+                await self.bot.change_presence(activity=None)
 
         await interaction.response.send_message(f"Bot status has been changed", ephemeral=True)
 
