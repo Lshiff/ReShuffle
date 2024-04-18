@@ -325,7 +325,7 @@ class Choose(discord.ui.View):
 
 class AddNotesView(discord.ui.View):
     def __init__(self, community_log_id: int, mod_log_message: discord.Message):
-        super().__init__()
+        super().__init__(timeout=None)
         self.add_item(AddNotesButton(community_log_id, mod_log_message))
 
 class AddNotesButton(discord.ui.Button):

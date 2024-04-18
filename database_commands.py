@@ -266,7 +266,7 @@ class DatabaseCommands:
         moderator_discord_username:str,
         timestamp:datetime,
         duration_of_timeout:timedelta,
-        notes: Optional[str] = None,
+        notes: str = "",
         ):
         """
         Creates a timeout log in the database
@@ -347,7 +347,7 @@ class DatabaseCommands:
         *,
         infraction:str,
         message:str,
-        notes: Optional[str] = None,
+        notes: str = "",
         is_custom:bool,
         is_custom_infraction:bool,
         is_custom_message:bool,
@@ -395,7 +395,7 @@ class DatabaseCommands:
         subcategory:str,
         question:str,
         message:str,
-        notes: Optional[str] = None,
+        notes: str = "",
         is_custom:bool,
         is_custom_category:bool,
         is_custom_question:bool,
@@ -449,7 +449,7 @@ class DatabaseCommands:
         subcategory:str,
         question:str,
         message:str,
-        notes: Optional[str] = None,
+        notes: str = "",
         is_custom:bool,
         is_custom_category:bool,
         is_custom_question:bool,
@@ -501,7 +501,7 @@ class DatabaseCommands:
             community_log = session.query(CommunityLog).filter_by(id = community_log_id).first()
             if not community_log:
                 return False
-            community_log.notes = notes
+            community_log.notes += notes
             session.commit()
             return True
 
@@ -511,7 +511,7 @@ class DatabaseCommands:
             support_log = session.query(SupportLog).filter_by(id = support_log_id).first()
             if not support_log:
                 return False
-            support_log.notes = notes
+            support_log.notes += notes
             session.commit()
             return True
 
@@ -521,7 +521,7 @@ class DatabaseCommands:
             moderation_log = session.query(ModerationLog).filter_by(id = moderation_log_id).first()
             if not moderation_log:
                 return False
-            moderation_log.notes = notes
+            moderation_log.notes += notes
             session.commit()
             return True
 
