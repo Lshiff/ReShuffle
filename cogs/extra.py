@@ -1,8 +1,11 @@
+import datetime
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 import variables as v
+import utils as u
 
 class ExtraCog(commands.Cog):
     def __init__(self, bot):
@@ -33,6 +36,17 @@ class ExtraCog(commands.Cog):
     # async def test(self, interaction: discord.Interaction):
     #     await interaction.response.send_message("test")
          
+    # @app_commands.command(name="discord_timestamp", description="Send a relative discord timestamp")
+    # @app_commands.describe(hours="number of hours", minutes="number of minuts")
+    # async def timestamp(self, interaction: discord.Interaction, hours: int, minutes: int = 0):
+    #     styles = ["default", "short time", "long time", "short date", "long date", "short date/time", "long date/time", "relative time"]
+    #     stri = ""
+    #     for item in styles:
+    #         tiemstamp = u.discord_timestamp_from_timedelta(datetime.timedelta(hours=hours, minutes=minutes), style=item)
+    #         stri += tiemstamp + "\n"
+    #     await interaction.response.send_message(stri)
+
+
     @commands.command()
     async def hello(self, ctx):
         await ctx.send("hiiiiiii")

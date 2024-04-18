@@ -1,9 +1,9 @@
 from typing import List, Optional
-from sqlalchemy import BIGINT, ForeignKey, create_engine, String, Date, TIMESTAMP, func, select, text, types, Integer, Boolean, MetaData
+from sqlalchemy import BIGINT, ForeignKey, create_engine, String, Date, TIMESTAMP, func, select, text, types, Integer, Boolean, MetaData, Interval
 from sqlalchemy.orm import DeclarativeBase, Mapped, Relationship, sessionmaker, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import INTERVAL, UUID
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
 
@@ -219,6 +219,18 @@ Sender Discord Username: {self.sender_discord_username}
 Timestamp: {self.timestamp}
     """
 
+class TimeoutLog(Base):
+    __tablename__ = "timeout_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    notes: Mapped[str] = mapped_column(nullable=True) 
+    user_discord_id: Mapped[int] = mapped_column(BIGINT())
+    user_discord_username: Mapped[str] = mapped_column(nullable=True) 
+    moderator_discord_id: Mapped[int] = mapped_column(BIGINT())
+    moderator_discord_username: Mapped[str] = mapped_column() 
+    timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
+    duration_of_timeout: Mapped[timedelta] = mapped_column(INTERVAL())
+
 
 class UserModerationLog(Base):
     __tablename__ = "user_moderation_logs"
@@ -244,6 +256,40 @@ def get_learner_from_discord(input_discord_username: str):
 
 
 class DatabaseCommands:
+
+    @staticmethod
+    def create_timeout_log(
+        *,
+        user_discord_id:int,
+        user_discord_username:str,
+        moderator_discord_id:int,
+        moderator_discord_username:str,
+        timestamp:datetime,
+        duration_of_timeout:timedelta,
+        notes: Optional[str] = None,
+        ):
+        """
+        Creates a timeout log in the database
+        Returns the timeout_log ID
+        """
+
+        timeout_log = TimeoutLog(
+            notes = notes,
+            user_discord_id = user_discord_id,
+            user_discord_username = user_discord_username,
+            moderator_discord_id = moderator_discord_id,
+            moderator_discord_username = moderator_discord_username,
+            timestamp = timestamp,
+            duration_of_timeout = duration_of_timeout
+        )
+
+
+        with Session() as session:
+            session.add(timeout_log)
+            session.commit()
+
+            return timeout_log.id
+
 
     @staticmethod
     def get_current_quest_from_discord(discord_username: str):
@@ -289,6 +335,12 @@ class DatabaseCommands:
         with Session() as session:
             support_logs = session.query(SupportLog).filter_by(original_message_sender_id = discord_id).all()
         return support_logs
+
+    @staticmethod
+    def get_past_timeout_logs_from_discord_id(discord_id: int):
+        with Session() as session:
+            timeout_logs = session.query(TimeoutLog).filter_by(user_discord_id = discord_id).all()
+        return timeout_logs
 
     @staticmethod
     def create_moderation_log(
@@ -470,6 +522,16 @@ class DatabaseCommands:
             if not moderation_log:
                 return False
             moderation_log.notes = notes
+            session.commit()
+            return True
+
+    @staticmethod
+    def update_timeout_log_notes(timeout_log_id: int, notes: str):
+        with Session() as session:
+            timeout_log = session.query(TimeoutLog).filter_by(id = timeout_log_id).first()
+            if not timeout_log:
+                return False
+            timeout_log.notes = notes
             session.commit()
             return True
 
