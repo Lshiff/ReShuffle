@@ -16,9 +16,7 @@ database_commands.py is where the database connection is.
 
 # To set up on the Discord server
 
-- Create a muted role with no permissions
-- In every channel/category except from timeout, give it no send messages permissions
-- also create a timeout category
+- Set all variables in `variables.py`
 
 ---
 This program is a discord bot built with discord.py [link].
