@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from cogwatch import Watcher, watch
+# from cogwatch import Watcher, watch
 from dotenv import load_dotenv
 import os
 import sys, traceback
@@ -37,8 +37,8 @@ async def on_ready():
     print("Bot is ready")
 
     #Starts cogwatch – reloads cog whenever a file in cogs/ is saved. Useful for development
-    watcher = Watcher(bot, path='cogs', preload=True)
-    await watcher.start()
+    # watcher = Watcher(bot, path='cogs', preload=True)
+    # await watcher.start()
 
 @bot.command()
 async def sync(ctx):
