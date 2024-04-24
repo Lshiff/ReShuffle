@@ -10,7 +10,7 @@ class UpdateCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="update_from_spreadsheet", description="Updates Support and Moderation commands from the spreadsheet")
+    @app_commands.command(name="update_from_cs_master", description="Updates Support and Moderation commands from the CS Master spreadsheet")
     async def update_from_spreadsheet(self, interaction: discord.Interaction):
 
         await interaction.response.defer(thinking=True, ephemeral=True)

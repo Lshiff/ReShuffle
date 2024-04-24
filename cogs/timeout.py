@@ -257,7 +257,7 @@ class TimeoutUserButton(discord.ui.Button):
 
 class ViewPastInfractionsButton(discord.ui.Button):
     def __init__(self, member: discord.Member):
-        super().__init__(style=discord.ButtonStyle.blurple, label = 'View Past Infractions')#, row=3)
+        super().__init__(style=discord.ButtonStyle.blurple, label = 'View History')#, row=3)
         self.member = member
 
     async def callback(self, interaction: discord.Interaction):
