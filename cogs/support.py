@@ -23,7 +23,7 @@ class SupportCog(commands.Cog):
             message_dict = json.load(f)
         original_message = message
         view = HelpCategoryDropdownView(message_dict, original_message)
-        await interaction.response.send_message("Pick the category", view = view, ephemeral=True)
+        await interaction.response.send_message("Pick the category", view = view, ephemeral=True, delete_after=30)
 
 
     @app_commands.command(name="support", description="Choose help message to send")
@@ -31,7 +31,7 @@ class SupportCog(commands.Cog):
         with open('customer_support_messages/support.json', 'r') as f:
             message_dict = json.load(f)
         view = HelpCategoryDropdownView(message_dict)
-        await interaction.response.send_message("Pick the category", view = view, ephemeral=True)
+        await interaction.response.send_message("Pick the category", view = view, ephemeral=True, delete_after=30)
 
 
 async def setup(bot):
@@ -221,7 +221,7 @@ class HelpCategoryDropdown(discord.ui.Select):
 
         view = HelpTopicDropdownView(options, category, self.message_dict, self.original_message)
 
-        await interaction.response.send_message("Pick the problem/question", view = view, ephemeral=True)
+        await interaction.response.send_message("Pick the problem/question", view = view, ephemeral=True, delete_after=30)
 
 class HelpTopicDropdownView(discord.ui.View):
     def __init__(self, options, category, message_dict, original_message=None):
@@ -255,7 +255,7 @@ class HelpTopicDropdown(discord.ui.Select):
         for i, message in enumerate(messages, start=1):
             msg += f"\n{i}: {message}\n"
 
-        await interaction.response.send_message(msg, view=view, ephemeral=True)
+        await interaction.response.send_message(msg, view=view, ephemeral=True, delete_after=30)
         await view.wait()
 
         if view.value == "custom":
@@ -283,7 +283,7 @@ class HelpTopicDropdown(discord.ui.Select):
 
 class ChooseButton(discord.ui.Button):
     def __init__(self, number: int):
-        super().__init__(style=discord.ButtonStyle.green, label=str(number))
+        super().__init__(style=discord.ButtonStyle.green, label=f"Choose {number}")
         self.number = number
 
     async def callback(self, interaction: discord.Interaction):

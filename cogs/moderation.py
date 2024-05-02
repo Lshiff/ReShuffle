@@ -23,14 +23,14 @@ class ModerationCog(commands.Cog):
             message_dict = json.load(f)
         original_message = message
         view = RemodDropdownView(message_dict, original_message)
-        await interaction.response.send_message("Pick the category", view = view, ephemeral=True)
+        await interaction.response.send_message("Pick the category", view = view, ephemeral=True, delete_after=30)
 
     @app_commands.command(name="moderation", description="Choose moderation message to send")
     async def remod(self, interaction: discord.Interaction):
         with open('customer_support_messages/moderation.json', 'r') as f:
             message_dict = json.load(f)
         view = RemodDropdownView(message_dict)
-        await interaction.response.send_message("Pick the category", view = view, ephemeral=True)#, delete_after=30)
+        await interaction.response.send_message("Pick the category", view = view, ephemeral=True, delete_after=30)#, delete_after=30)
 
 
 async def setup(bot):
@@ -149,7 +149,7 @@ class RemodDropdown(discord.ui.Select):
             
         view = Choose(len(messages), self.original_message, infraction)
 
-        await interaction.response.send_message(msg, view=view, ephemeral=True)
+        await interaction.response.send_message(msg, view=view, ephemeral=True, delete_after=30)
         await view.wait()
         # await interaction.delete_original_response()
         if not view.value:
@@ -182,7 +182,7 @@ class RemodDropdownView(discord.ui.View):
 
 class ChooseButton(discord.ui.Button):
     def __init__(self, number: int):
-        super().__init__(style=discord.ButtonStyle.green, label=str(number))
+        super().__init__(style=discord.ButtonStyle.green, label=f"Choose {number}")
         self.number = number
 
     async def callback(self, interaction: discord.Interaction):

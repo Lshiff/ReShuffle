@@ -283,7 +283,7 @@ class HelpTopicDropdown(discord.ui.Select):
 
 class ChooseButton(discord.ui.Button):
     def __init__(self, number: int):
-        super().__init__(style=discord.ButtonStyle.green, label=str(number))
+        super().__init__(style=discord.ButtonStyle.green, label=f"Choose {number}")
         self.number = number
 
     async def callback(self, interaction: discord.Interaction):
