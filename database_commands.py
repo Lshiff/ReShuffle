@@ -561,6 +561,16 @@ class DatabaseCommands:
 
             return automod_log.id
 
+    @staticmethod
+    def is_duplicate_automod_log( user_id: int, channel_id: int, content: str):
+        with Session() as session:
+            s5_ago = datetime.now() - timedelta(seconds=5)
+            existing_automod_logs = session.query(AutoModLog).filter(AutoModLog.user_discord_id == user_id, AutoModLog.channel_id == channel_id, AutoModLog.content == content).all()
+            for automod_log in existing_automod_logs:
+                if automod_log.timestamp > s5_ago:
+                    return True
+            return False
+
 
 
     @staticmethod

@@ -11,44 +11,37 @@ class AutomodCog(commands.Cog):
 
 
 
-    # @commands.Cog.listener()
-    # async def on_automod_action(self, action: discord.AutoModAction):
-        # rule = await action.fetch_rule()
+    @commands.Cog.listener()
+    async def on_automod_action(self, action: discord.AutoModAction):
+        rule = await action.fetch_rule()
 
-        # assert isinstance(action.channel, discord.TextChannel)
-        # assert action.member is not None
+        assert isinstance(action.channel, discord.TextChannel)
+        assert action.member is not None
 
-        # await action.channel.send(f"{action.member.mention} triggered {rule.name} for saying {action.content}")
-        # s = f"""
-# member: {action.member.mention}
-# member_id: {action.member.id}
-# member_username: {action.member.name}
-# content: {action.content}
-# matched_content: {action.matched_content}
-# automod_rule_name: {rule.name}
-# automod_rule_id: {rule.id}
-# channel: {action.channel.mention}
-# channel_id: {action.channel_id}
-# channel_name: {action.channel.name}
-# timeout duration: {action.action.duration}
+        if db.is_duplicate_automod_log(action.member.id, action.channel.id, action.content):
+            print("duplicate")
+            return
 
-# {action.message_id}
-# """
-        # await action.channel.send(s)
+        print("Adding to db")
+        db.create_automod_log(
+            user_discord_id = action.member.id,
+            user_discord_username = action.member.name,
+            content = action.content,
+            matched_content = action.matched_content,
+            automod_rule_name = rule.name,
+            automod_rule_id = rule.id,
+            channel_id = action.channel.id,
+            channel_name = action.channel.name,
+            timeout_duration = action.action.duration,
+        )
 
-        # db.create_automod_log(
-        #     user_discord_id = action.member.id,
-        #     user_discord_username = action.member.name,
-        #     content = action.content,
-        #     matched_content = action.matched_content,
-        #     automod_rule_name = rule.name,
-        #     automod_rule_id = rule.id,
-        #     channel_id = action.channel.id,
-        #     channel_name = action.channel.name,
-        #     timeout_duration = action.action.duration,
-        # )
 
-        # await action.channel.send("added to db ig")
+        # automod_log_channel = discord.utils.get(action.guild.text_channels, id=v.AUTOMOD_LOG_ID)
+        # if not automod_log_channel:
+        #     print("NO AUTOMOD LOG CHANNEL FOUND")
+        #     return
+        # await automod_log_channel.send(f"DB: {action.member.mention} said `{action.content}`")
+
 
 
 
