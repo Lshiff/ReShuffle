@@ -10,9 +10,6 @@ class AutomodCog(commands.Cog):
         self.bot = bot
 
 
-    @commands.command()
-    async def hi(self, ctx):
-        await ctx.reply("heyo")
 
     # @commands.Cog.listener()
     # async def on_automod_action(self, action: discord.AutoModAction):

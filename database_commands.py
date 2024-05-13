@@ -248,6 +248,18 @@ class AutoModLog(Base):
     timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
 
 
+class HelperApplicationLog(Base):
+    __tablename__ = "helper_application_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_discord_id: Mapped[int] = mapped_column(BIGINT())
+    user_discord_username: Mapped[str] = mapped_column(nullable=True) 
+    conversation: Mapped[str] = mapped_column() 
+    result: Mapped[str] = mapped_column() #accepted, denied
+    notes: Mapped[str] = mapped_column() 
+    timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
+
+
 class UserModerationLog(Base):
     __tablename__ = "user_moderation_logs"
 
@@ -592,6 +604,16 @@ class DatabaseCommands:
             return True
 
     @staticmethod
+    def update_helper_log_notes(helper_log_id: int, notes: str):
+        with Session() as session:
+            helper_log = session.query(HelperApplicationLog).filter_by(id = helper_log_id).first()
+            if not helper_log:
+                return False
+            helper_log.notes = notes
+            session.commit()
+            return True
+
+    @staticmethod
     def create_user_moderation_log(user_discord_id: int, user_discord_username: str, punishment: str, note: str, sender_discord_id: int, sender_discord_username: str):
 
         user_moderation_log = UserModerationLog(
@@ -615,6 +637,32 @@ class DatabaseCommands:
             notes = session.query(UserModerationLog).filter_by(user_discord_id = user_id).order_by(UserModerationLog.timestamp.desc()).all()
 
         return notes
+
+
+    @staticmethod
+    def create_helper_application_log(
+        user_discord_id: int,
+        user_discord_username: str,
+        conversation: str,
+        result: str,
+        notes: str,
+        ):
+
+    
+        helper_application_log = HelperApplicationLog(
+            user_discord_id = user_discord_id,
+            user_discord_username = user_discord_username,
+            conversation = conversation,
+            result = result,
+            notes = notes,
+            timestamp = datetime.now(),
+        )
+
+        with Session() as session:
+            session.add(helper_application_log)
+            session.commit()
+            return helper_application_log.id
+
 
 if __name__ == "__main__":
 
