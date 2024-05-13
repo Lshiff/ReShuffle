@@ -232,6 +232,22 @@ class TimeoutLog(Base):
     duration_of_timeout: Mapped[timedelta] = mapped_column(INTERVAL())
 
 
+class AutoModLog(Base):
+    __tablename__ = "automod_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_discord_id: Mapped[int] = mapped_column(BIGINT())
+    user_discord_username: Mapped[str] = mapped_column(nullable=True) 
+    content: Mapped[str] = mapped_column() 
+    matched_content: Mapped[str] = mapped_column(nullable=True) 
+    automod_rule_name: Mapped[str] = mapped_column() 
+    automod_rule_id: Mapped[int] = mapped_column(BIGINT())
+    channel_id: Mapped[int] = mapped_column(BIGINT())
+    channel_name: Mapped[str] = mapped_column() 
+    timeout_duration: Mapped[timedelta] = mapped_column(INTERVAL(), nullable=True)
+    timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
+
+
 class UserModerationLog(Base):
     __tablename__ = "user_moderation_logs"
 
@@ -243,6 +259,7 @@ class UserModerationLog(Base):
     sender_discord_username: Mapped[str] = mapped_column() 
     punishment: Mapped[str] = mapped_column(nullable=True) 
     note: Mapped[str] = mapped_column() 
+
 
 Base.metadata.create_all(engine)
 
@@ -494,6 +511,45 @@ class DatabaseCommands:
             session.commit()
 
             return community_log.id
+
+
+    @staticmethod
+    def create_automod_log(
+        user_discord_id:int,
+        user_discord_username:str,
+        content:str,
+        matched_content: Optional[str],
+        automod_rule_name:str,
+        automod_rule_id:int,
+        channel_id:int,
+        channel_name:str,
+        timeout_duration:Optional[timedelta],
+        ):
+        """
+        Create an AutoModLog with the given paramaters
+        Return the automod_log ID
+        """
+
+        automod_log = AutoModLog(
+            user_discord_id = user_discord_id,
+            user_discord_username = user_discord_username,
+            content = content,
+            matched_content = matched_content,
+            automod_rule_name = automod_rule_name,
+            automod_rule_id = automod_rule_id,
+            channel_id = channel_id,
+            channel_name = channel_name,
+            timeout_duration = timeout_duration,
+            timestamp = datetime.now()
+        )
+
+        with Session() as session:
+            session.add(automod_log)
+            session.commit()
+
+            return automod_log.id
+
+
 
     @staticmethod
     def update_community_log_notes(community_log_id: int, notes: str):
