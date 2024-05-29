@@ -86,6 +86,20 @@ class UpdateCog(commands.Cog):
             with open('customer_support_messages/private_moderation.json', 'w') as file:
                 file.write(json_file)
 
+            #HELPER APPLICATION FEEDBACK
+            headers = {
+                "Authorization": "Bearer REFVPUkKoKgXg6xXG6bq3gybsi9Rezsw",
+                    }
+            response = requests.get('https://api.sheety.co/3404605601848dcc35723dc42f596638/csChiefManualApril2024/helperApplicationFeedback', headers=headers)
+            print(response.text)
+
+            helper_application_feedback = response.json()["helperApplicationFeedback"]
+
+            message_dict_helper_application_feedback = create_message_dict_helper_feedback(helper_application_feedback)
+
+            json_file = json.dumps(message_dict_helper_application_feedback)
+            with open('customer_support_messages/helper_application_feedback.json', 'w') as file:
+                file.write(json_file)
 
             await interaction.followup.send("Updated!", ephemeral=True)
 
@@ -150,6 +164,32 @@ def create_message_dict_support(support_json) -> dict:
 
     return message_dict
 
+def create_message_dict_helper_feedback(helper_feedback_json) -> dict:
+    message_dict = {}
+
+    category = ''
+    category_dict = {}
+    question = ''
+    for row_dict in helper_feedback_json:
+        print(row_dict)
+        if row_dict['category'] and row_dict['category'] != category:
+            if category != '':
+                message_dict[category] = category_dict
+            category = row_dict['category'].strip()
+
+            emoji = row_dict['categoryEmoji'].strip()
+            category_dict = {"emoji": emoji}
+
+        if row_dict['problem/question'] and row_dict['problem/question'] != question:
+            question = row_dict['problem/question'].strip()
+            emoji = row_dict['problemEmoji'].strip()
+            category_dict[question] = {"emoji": emoji, "messages": []}
+
+        category_dict[question]['messages'].append(row_dict['chiefMessage'].strip())
+
+    message_dict[category] = category_dict
+
+    return message_dict
 
 async def setup(bot):
     await bot.add_cog(UpdateCog(bot))

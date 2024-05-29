@@ -252,16 +252,23 @@ class HelperApplicationLog(Base):
     __tablename__ = "helper_application_logs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    status: Mapped[str] = mapped_column() #created, in_progress, completed
+    channel_id: Mapped[int] = mapped_column(BIGINT(), unique=True)
     user_discord_id: Mapped[int] = mapped_column(BIGINT())
     user_discord_username: Mapped[str] = mapped_column(nullable=True) 
+    moderator_discord_id: Mapped[int] = mapped_column(BIGINT(), nullable=True)
+    moderator_discord_username: Mapped[str] = mapped_column(nullable=True) 
     conversation: Mapped[str] = mapped_column() 
-    result: Mapped[str] = mapped_column() #accepted, denied
-    notes: Mapped[str] = mapped_column() 
-    timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
+    was_accepted: Mapped[bool] = mapped_column(nullable=True) 
+    rejection_reason: Mapped[str] = mapped_column(nullable=True)
+    quest: Mapped[str] = mapped_column(nullable=True) 
+    notes: Mapped[str] = mapped_column(nullable=True) 
+    timestamp_created: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
+    timestamp_completed: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP(), nullable=True)
 
 
-class UserModerationLog(Base):
-    __tablename__ = "user_moderation_logs"
+class UserNote(Base):
+    __tablename__ = "user_notes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     timestamp: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP())
@@ -269,7 +276,6 @@ class UserModerationLog(Base):
     user_discord_username: Mapped[str] = mapped_column() 
     sender_discord_id: Mapped[int] = mapped_column(BIGINT())
     sender_discord_username: Mapped[str] = mapped_column() 
-    punishment: Mapped[str] = mapped_column(nullable=True) 
     note: Mapped[str] = mapped_column() 
 
 
@@ -572,6 +578,18 @@ class DatabaseCommands:
             return False
 
 
+    @staticmethod
+    def user_has_open_helper_app(user_id):
+        """
+        Returns a channel_id of an open helper app or None
+        """
+        with Session() as session:
+            open_helper_app = session.query(HelperApplicationLog).filter(HelperApplicationLog.user_discord_id == user_id, HelperApplicationLog.status != "completed").first()
+            if not open_helper_app:
+                return None
+            return open_helper_app.channel_id
+
+
 
     @staticmethod
     def update_community_log_notes(community_log_id: int, notes: str):
@@ -614,6 +632,15 @@ class DatabaseCommands:
             return True
 
     @staticmethod
+    def get_helper_application_log_by_channel_id(channel_id: int):
+        with Session() as session:
+            helper_log = session.query(HelperApplicationLog).filter_by(channel_id = channel_id).first()
+            if not helper_log:
+                return None
+            return helper_log
+
+
+    @staticmethod
     def update_helper_log_notes(helper_log_id: int, notes: str):
         with Session() as session:
             helper_log = session.query(HelperApplicationLog).filter_by(id = helper_log_id).first()
@@ -624,9 +651,9 @@ class DatabaseCommands:
             return True
 
     @staticmethod
-    def create_user_moderation_log(user_discord_id: int, user_discord_username: str, punishment: str, note: str, sender_discord_id: int, sender_discord_username: str):
+    def add_note(user_discord_id: int, user_discord_username: str, punishment: str, note: str, sender_discord_id: int, sender_discord_username: str):
 
-        user_moderation_log = UserModerationLog(
+        user_moderation_log = UserNote(
             timestamp = datetime.now(),
             user_discord_id = user_discord_id,
             user_discord_username = user_discord_username,
@@ -641,10 +668,10 @@ class DatabaseCommands:
             session.commit()
 
     @staticmethod
-    def get_user_moderation_logs_by_discord_id(user_id: int):
+    def get_notes_by_discord_id(user_id: int):
         
         with Session() as session:
-            notes = session.query(UserModerationLog).filter_by(user_discord_id = user_id).order_by(UserModerationLog.timestamp.desc()).all()
+            notes = session.query(UserNote).filter_by(user_discord_id = user_id).order_by(UserNote.timestamp.desc()).all()
 
         return notes
 
@@ -653,25 +680,128 @@ class DatabaseCommands:
     def create_helper_application_log(
         user_discord_id: int,
         user_discord_username: str,
-        conversation: str,
-        result: str,
-        notes: str,
+        channel_id: int,
+        # conversation: str,
         ):
+        """
+        Creates a helper application log
+        Sets status to 'started'
+        Sets channel_id
+        Sets user
+        (doesn't) Sets conversation
+        """
 
-    
         helper_application_log = HelperApplicationLog(
+            status = "started",
+            channel_id = channel_id,
             user_discord_id = user_discord_id,
             user_discord_username = user_discord_username,
-            conversation = conversation,
-            result = result,
-            notes = notes,
-            timestamp = datetime.now(),
+            conversation = "",
+            timestamp_created = datetime.now(),
         )
 
         with Session() as session:
             session.add(helper_application_log)
             session.commit()
             return helper_application_log.id
+
+    @staticmethod
+    def update_helper_application_log(
+        channel_id: int,
+        conversation: str,
+        ):
+        """
+        Updates conversation
+        Changes status to 'in_progress'
+        """
+
+        with Session() as session:
+            helper_log = session.query(HelperApplicationLog).filter_by(channel_id = channel_id).first()
+            if not helper_log:
+                print("Helper log could not be found to update it")
+                return
+
+
+            helper_log.conversation = conversation
+
+            if helper_log.status != "completed":
+                helper_log.status = "in_progress"
+
+            session.add(helper_log)
+            session.commit()
+
+
+    @staticmethod
+    def deny_helper_application_log(
+        *,
+        channel_id: int,
+        conversation: str,
+        rejection_reason: Optional[str] = None,
+        moderator_discord_id: int,
+        moderator_discord_username: str
+        ):
+        """
+        Updates conversation
+        Sets status to 'completed'
+        Setus was_accepted to False
+        Sets rejection_reason
+        Sets moderator
+        Returns helper_log ID
+        """
+
+        with Session() as session:
+            helper_log = session.query(HelperApplicationLog).filter_by(channel_id = channel_id).first()
+            if not helper_log:
+                print("Helper log could not be found to deny it")
+                return
+            helper_log.conversation = conversation
+            helper_log.status = "completed"
+            helper_log.was_accepted = False
+            helper_log.rejection_reason = rejection_reason
+            helper_log.timestamp_completed = datetime.now()
+            helper_log.moderator_discord_id = moderator_discord_id
+            helper_log.moderator_discord_username = moderator_discord_username
+
+            session.add(helper_log)
+            session.commit()
+
+            return helper_log.id
+
+    @staticmethod
+    def accept_helper_application_log(
+        *,
+        channel_id: int,
+        conversation: str,
+        moderator_discord_id: int,
+        moderator_discord_username: str,
+        quest: Optional[str] = None
+        ):
+        """
+        Updates conversation
+        Sets status to 'completed'
+        Sets was_accepted to True
+        Sets moderator
+        Sets quest
+        Returns helper_log ID
+        """
+
+        with Session() as session:
+            helper_log = session.query(HelperApplicationLog).filter_by(channel_id = channel_id).first()
+            if not helper_log:
+                print("Helper log could not be found to deny it")
+                return
+            helper_log.conversation = conversation
+            helper_log.status = "completed"
+            helper_log.was_accepted = True
+            helper_log.timestamp_completed = datetime.now()
+            helper_log.moderator_discord_id = moderator_discord_id
+            helper_log.moderator_discord_username = moderator_discord_username
+            helper_log.quest = quest
+
+            session.add(helper_log)
+            session.commit()
+            return helper_log.id
+
 
 
 if __name__ == "__main__":
